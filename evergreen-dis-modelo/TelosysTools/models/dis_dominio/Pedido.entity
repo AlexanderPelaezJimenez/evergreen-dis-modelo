@@ -1,0 +1,34 @@
+// Del caso: identificador, fechaEntrada, fechaSalida. Raiz del agregado
+@AggregateRoot
+@DbTable(DIS_PEDIDO)
+Pedido {
+  id                     : int      { @Id @AutoIncremented } ;
+  identificador          : string   { @NotNull @MaxLen(30) } ;   // del caso
+  fechaEntrada           : datetime { @NotNull } ;               // del caso
+  fechaSalida            : datetime ;                            // del caso
+  fechaCompromisoEntrega : date     { @NotNull } ;
+  pesoTotalKg            : decimal  { @Size(12,3) @Min(0) } ;
+  volumenTotalM3         : decimal  { @Size(12,4) @Min(0) } ;
+  valorTotal             : decimal  { @Size(14,2) @Min(0) } ;
+  moneda                 : string   { @NotNull @MaxLen(3) @DefaultValue("COP") } ;
+  requiereCadenaFrio     : boolean  { @NotNull @DefaultValue(false) } ;
+  observaciones          : string   { @LongText } ;
+  prioridad              : short    { @NotNull @Min(1) @Max(5) @DefaultValue(3) @Label("1=urgente, 5=baja") } ;
+
+  // --- Foreign Keys ---
+  clienteId          : int    { @NotNull @FK(FK_PED_CLI, Cliente) } ;
+  direccionEntregaId : int    { @NotNull @FK(FK_PED_DIR, Direccion) } ;
+  canalCodigo        : string { @NotNull @FK(FK_PED_CAN, CanalComercializacion) } ;
+  estadoCodigo       : string { @NotNull @FK(FK_PED_EST, EstadoPedido) } ;
+  envioId            : int    {          @FK(FK_PED_ENV, Envio) } ;
+
+  // --- Links ---
+  cliente          : Cliente               { @LinkByFK(FK_PED_CLI) } ;
+  direccionEntrega : Direccion             { @LinkByFK(FK_PED_DIR) } ;
+  canal            : CanalComercializacion { @LinkByFK(FK_PED_CAN) } ;
+  estado           : EstadoPedido          { @LinkByFK(FK_PED_EST) } ;
+  envio            : Envio                 { @LinkByFK(FK_PED_ENV) @Optional } ;
+  lineas           : LineaPedido[]         { @MappedBy(pedido) @Cascade(ALL) } ;
+  tareas           : Tarea[]               { @MappedBy(pedido) @Cascade(ALL) } ;
+  entrega          : Entrega               { @MappedBy(pedido) @OneToOne @Optional } ;
+}

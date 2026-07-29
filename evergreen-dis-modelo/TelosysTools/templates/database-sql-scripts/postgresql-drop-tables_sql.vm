@@ -1,0 +1,9 @@
+#set( $env.database = 'PostgreSQL' )
+#parse("include/sql_header.vm")
+## ---------------------------------------------------------
+##  DROP TABLE for each ENTITY
+## ---------------------------------------------------------
+-- DROP ALL TABLES
+#foreach( $entity in $model.allEntites )
+DROP TABLE IF EXISTS $entity.sqlTableName CASCADE ;
+#end

@@ -1,0 +1,9 @@
+// Catalogo de tipos de tarea de preparacion - del caso, ahora como catalogo
+@ReadOnly
+@DbTable(DIS_TIPO_TAREA)
+TipoTarea {
+  codigo          : string  { @Id @MaxLen(15) } ;   // SEPARACION, EMPAQUE, ROTULADO, CARGUE
+  nombre          : string  { @NotNull @MaxLen(40) } ;
+  orden           : short   { @NotNull @Min(1) @Label("Orden sugerido de ejecucion") } ;
+  requiereDetalle : boolean { @NotNull @DefaultValue(false) @Label("Tiene entidad especializada") } ;
+}

@@ -1,0 +1,18 @@
+// Del caso: tipo, tamaño, cantidad, tiempo
+// "tipo"   -> FK a TipoEmpaque (normalizado)
+// "tamaño" -> "tamano" (la ñ no es valida en Telosys)
+// "tiempo" -> trasladado a Tarea.duracionMinutos
+@DbTable(DIS_EMPAQUE)
+Empaque {
+  tareaId      : int     { @Id @FK(FK_EMP_TAR, Tarea) } ;   // PK = FK: especializacion 1:1
+  cantidad     : int     { @NotNull @Min(1) @Label("Numero de empaques generados") } ;  // del caso
+  tamano       : string  { @MaxLen(20) } ;                                              // del caso
+  pesoNetoKg   : decimal { @Size(10,3) @Min(0) } ;
+  pesoBrutoKg  : decimal { @Size(10,3) @Min(0) } ;
+  rotulado     : boolean { @NotNull @DefaultValue(false) } ;
+
+  tipoEmpaqueId : int { @NotNull @FK(FK_EMP_TIP, TipoEmpaque) } ;
+
+  tarea       : Tarea       { @LinkByFK(FK_EMP_TAR) } ;
+  tipoEmpaque : TipoEmpaque { @LinkByFK(FK_EMP_TIP) } ;
+}

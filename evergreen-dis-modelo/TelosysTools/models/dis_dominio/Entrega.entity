@@ -1,0 +1,14 @@
+// Evidencia de cumplimiento de la entrega - resuelve H17
+@DbTable(DIS_ENTREGA)
+Entrega {
+  pedidoId           : int      { @Id @FK(FK_ENT_PED, Pedido) } ;   // 1:1 con Pedido
+  fechaEntrega       : datetime { @NotNull } ;
+  nombreReceptor     : string   { @NotNull @MaxLen(80) } ;
+  documentoReceptor  : string   { @MaxLen(20) } ;
+  cantidadRecibida   : decimal  { @Size(12,3) @Min(0) } ;
+  conNovedad         : boolean  { @NotNull @DefaultValue(false) } ;
+  descripcionNovedad : string   { @LongText } ;
+  evidenciaUrl       : string   { @MaxLen(255) } ;
+
+  pedido : Pedido { @LinkByFK(FK_ENT_PED) } ;
+}

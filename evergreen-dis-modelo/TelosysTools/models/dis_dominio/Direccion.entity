@@ -1,0 +1,17 @@
+// A donde se entrega el pedido - resuelve H09
+@DbTable(DIS_DIRECCION)
+Direccion {
+  id             : int     { @Id @AutoIncremented } ;
+  alias          : string  { @NotNull @MaxLen(60) } ;    // "Bodega norte", "Plaza mayorista"
+  lineaDireccion : string  { @NotNull @MaxLen(200) } ;
+  ciudad         : string  { @NotNull @MaxLen(80) } ;
+  departamento   : string  { @MaxLen(80) } ;
+  pais           : string  { @NotNull @MaxLen(60) @DefaultValue("Colombia") } ;
+  codigoPostal   : string  { @MaxLen(12) } ;
+  latitud        : decimal { @Size(9,6) @Min(-90)  @Max(90) } ;
+  longitud       : decimal { @Size(9,6) @Min(-180) @Max(180) } ;
+  esPrincipal    : boolean { @NotNull @DefaultValue(false) } ;
+
+  clienteId : int { @NotNull @FK(FK_DIR_CLI, Cliente) } ;
+  cliente   : Cliente { @LinkByFK(FK_DIR_CLI) } ;
+}

@@ -1,0 +1,15 @@
+#set( $env.database = 'MySQL' )
+#parse("include/sql_header.vm")
+
+-- DROP ALL FK CONSTRAINTS
+#foreach( $entity in $model.allEntites  )
+$___#foreach( $fk in $entity.databaseForeignKeys )
+## NB : no quote around FK-NAME for MYSQL
+ALTER TABLE $entity.sqlTableName DROP CONSTRAINT $fk.name ;
+$___#end## foreach( $fk )
+#end## foreach( $entity )
+
+-- DROP ALL TABLES
+#foreach( $entity in $model.allEntites )
+DROP TABLE IF EXISTS $entity.sqlTableName CASCADE ;
+#end

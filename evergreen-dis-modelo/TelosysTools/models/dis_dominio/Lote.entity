@@ -1,0 +1,15 @@
+// Trazabilidad hacia el predio de origen - resuelve H15
+@DbTable(DIS_LOTE)
+Lote {
+  id                 : int     { @Id @AutoIncremented } ;
+  codigo             : string  { @NotNull @MaxLen(30) } ;
+  fechaCosecha       : date    { @NotNull } ;
+  fechaVencimiento   : date ;
+  cantidadInicial    : decimal { @NotNull @Size(12,3) @Min(0) } ;
+  cantidadDisponible : decimal { @NotNull @Size(12,3) @Min(0) } ;
+  predioOrigen       : string  { @MaxLen(120) @Label("Referencia al modulo de Produccion") } ;
+  parcelaOrigen      : string  { @MaxLen(60) } ;
+
+  productoId : int { @NotNull @FK(FK_LOT_PRO, Producto) } ;
+  producto   : Producto { @LinkByFK(FK_LOT_PRO) } ;
+}

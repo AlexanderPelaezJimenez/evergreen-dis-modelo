@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16
+    container_name: evergreen-dis-db
+    environment:
+      POSTGRES_DB: evergreen_dis
+      POSTGRES_USER: evergreen
+      POSTGRES_PASSWORD: evergreen
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./sql/postgresql-create-tables.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/init/02-seed-catalogos.sql:/docker-entrypoint-initdb.d/02-seed-catalogos.sql:ro
+      - ./db/init/03-escenario-act13.sql:/docker-entrypoint-initdb.d/03-escenario-act13.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evergreen -d evergreen_dis"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

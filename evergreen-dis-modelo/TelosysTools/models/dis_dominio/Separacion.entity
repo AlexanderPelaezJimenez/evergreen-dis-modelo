@@ -1,0 +1,16 @@
+// Del caso: "Separación" (con tilde: nombre invalido en Telosys) -> "Separacion"
+// "lote" -> FK a Lote (normalizado)
+@DbTable(DIS_SEPARACION)
+Separacion {
+  tareaId         : int     { @Id @FK(FK_SEP_TAR, Tarea) } ;   // PK = FK: especializacion 1:1
+  cantidad        : decimal { @NotNull @Size(12,3) @Min(0) } ;  // del caso
+  ubicacionOrigen : string  { @MaxLen(60) @Label("Bodega o area de separacion") } ;
+  mermaKg         : decimal { @Size(10,3) @Min(0) @DefaultValue(0) } ;
+
+  loteId       : int    { @NotNull @FK(FK_SEP_LOT, Lote) } ;          // el "lote" del caso
+  unidadCodigo : string { @NotNull @FK(FK_SEP_UNI, UnidadMedida) } ;
+
+  tarea  : Tarea        { @LinkByFK(FK_SEP_TAR) } ;
+  lote   : Lote         { @LinkByFK(FK_SEP_LOT) } ;
+  unidad : UnidadMedida { @LinkByFK(FK_SEP_UNI) } ;
+}

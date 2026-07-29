@@ -1,0 +1,19 @@
+## ----------------------------------------------------------
+#macro( setEOL $entity $foreach )
+$__#if( $foreach.hasNext() || $entity.hasPrimaryKey() )
+$____#set($EOL=",")
+$__#else
+$____#set($EOL="")
+$__#end
+#end
+## ----------------------------------------------------------
+#*
+## Set column type adding (255) if VARCHAR has no max length
+#macro( setCOLTYPE $attribute )
+$__#set($COLTYPE = $attribute.sqlColumnType)
+$__#if ( $COLTYPE.equalsIgnoreCase('VARCHAR') )
+$____#set( $COLTYPE = "${COLTYPE}(255)")
+$__#end
+#end
+## ----------------------------------------------------------
+*#

@@ -1,0 +1,48 @@
+#set( $env.database = 'sqlite' )
+#parse("include/sql_header.vm")
+#parse("include/sql_macros.vm")
+## ---------------------------------------
+##  For each entity : CREATE TABLE 
+##  With SQLite it's possible to create a FK that refers to a table that does not exist
+## ---------------------------------------
+#foreach( $entity in $model.allEntites )
+## CREATE TABLE IF NOT EXISTS $entity.sqlTableName
+## use $entity.databaseSchema if necessary
+CREATE TABLE $entity.sqlTableName
+(
+## COLUMNS DEFINITION :
+$__#foreach( $attribute in $entity.attributes )
+$____#setEOL($entity, $foreach)
+  $attribute.sqlColumnName $attribute.sqlColumnType ${attribute.sqlColumnConstraints}$EOL
+$__#end
+## PRIMARY KEY DEFINITION :
+$__#if( $entity.hasPrimaryKey() )
+  PRIMARY KEY ($entity.sqlPrimaryKeyColumnsAsString)#if($entity.hasForeignKeys()),#end
+$__#end
+## FOREIGN KEY(S) DEFINITION :
+$__#if ( $entity.hasForeignKeys() ) 
+## $____#set($tableName = $entity.sqlTableName )
+$____#foreach( $fk in $entity.databaseForeignKeys )
+
+  FOREIGN KEY($fk.sqlOriginColumnsAsString) REFERENCES ${fk.sqlReferencedTableName}($fk.sqlReferencedColumnsAsString)#if($foreach.hasNext),#end
+$____#end## foreach( $fk )
+$__#end## if has FK
+
+);
+
+#end## foreach( $entity )
+
+## ---------------------------------------------------------
+##  For each Foreign Key in each entity : CREATE INDEX
+## ---------------------------------------------------------
+#foreach( $entity in $model.allEntites  )
+$__#if ( $entity.hasForeignKeys() ) 
+$____#set($tableName = $entity.sqlTableName )
+$____#foreach( $fk in $entity.databaseForeignKeys )
+$______#set($n = $foreach.index + 1 )
+$______#set($indexName = "${tableName}_index${n}_fk_${fk.sqlReferencedTableName}")
+CREATE INDEX $indexName ON $tableName($fk.sqlOriginColumnsAsString) ;
+$____#end## foreach( $fk )
+
+$__#end## if has FK
+#end## foreach( $entity )

@@ -1,0 +1,8 @@
+#set( $env.database = 'sqlite' )
+#parse("include/sql_header.vm")
+## ---------------------------------------------------------
+##  DROP TABLE for each ENTITY
+## ---------------------------------------------------------
+#foreach( $entity in $model.allEntites )
+DROP TABLE IF EXISTS $entity.sqlTableName ;
+#end

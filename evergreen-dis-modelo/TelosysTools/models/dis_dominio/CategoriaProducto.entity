@@ -1,0 +1,10 @@
+// Categoria agricola con parametros de conservacion - resuelve H15
+@DbTable(DIS_CATEGORIA_PRODUCTO)
+CategoriaProducto {
+  id              : int     { @Id @AutoIncremented } ;
+  nombre          : string  { @NotNull @MaxLen(40) } ;   // FRUTA, HORTALIZA, FLORES, GRANO
+  perecedero      : boolean { @NotNull @DefaultValue(true) } ;
+  vidaUtilDias    : short   { @Min(0) } ;
+  temperaturaMinC : decimal { @Size(5,2) } ;
+  temperaturaMaxC : decimal { @Size(5,2) } ;
+}

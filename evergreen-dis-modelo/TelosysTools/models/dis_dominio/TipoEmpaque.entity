@@ -1,0 +1,10 @@
+// Normaliza el atributo "tipo" de Empaque - resuelve H10
+@DbTable(DIS_TIPO_EMPAQUE)
+TipoEmpaque {
+  id           : int     { @Id @AutoIncremented } ;
+  nombre       : string  { @NotNull @MaxLen(40) } ;   // CAJA, CANASTILLA, SACO, GUACAL
+  material     : string  { @MaxLen(30) } ;
+  capacidadKg  : decimal { @Size(8,2) @Min(0) } ;
+  taraKg       : decimal { @Size(8,3) @Min(0) @Label("Peso del empaque vacio") } ;
+  reutilizable : boolean { @NotNull @DefaultValue(false) } ;
+}

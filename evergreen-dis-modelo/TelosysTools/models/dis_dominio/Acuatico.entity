@@ -1,0 +1,13 @@
+// Del caso (sin atributos). Especializacion con datos reales del modo acuatico
+@DbTable(DIS_ACUATICO)
+Acuatico {
+  transporteId         : int    { @Id @FK(FK_ACU_TRA, Transporte) } ;
+  naviera              : string { @NotNull @MaxLen(60) } ;
+  nombreEmbarcacion    : string { @MaxLen(60) } ;
+  puertoOrigen         : string { @MaxLen(60) } ;
+  puertoDestino        : string { @MaxLen(60) } ;
+  numeroContenedor     : string { @MaxLen(20) } ;
+  conocimientoEmbarque : string { @MaxLen(30) @Label("Bill of Lading") } ;
+
+  transporte : Transporte { @LinkByFK(FK_ACU_TRA) } ;
+}

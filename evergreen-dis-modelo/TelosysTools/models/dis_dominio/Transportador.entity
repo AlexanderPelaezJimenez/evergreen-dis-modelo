@@ -1,0 +1,12 @@
+// Quien presta el servicio de transporte
+@DbTable(DIS_TRANSPORTADOR)
+Transportador {
+  id          : int     { @Id @AutoIncremented } ;
+  nit         : string  { @NotNull @MaxLen(20) } ;
+  razonSocial : string  { @NotNull @MaxLen(120) } ;
+  telefono    : string  { @MaxLen(20) } ;
+  correo      : string  { @MaxLen(120) } ;
+  activo      : boolean { @NotNull @DefaultValue(true) } ;
+
+  transportes : Transporte[] { @MappedBy(transportador) } ;
+}

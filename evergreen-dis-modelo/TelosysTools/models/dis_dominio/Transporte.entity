@@ -1,0 +1,21 @@
+// Del caso (sin atributos). Base de la jerarquia con discriminador de modalidad
+@AggregateRoot
+@DbTable(DIS_TRANSPORTE)
+Transporte {
+  id                 : int     { @Id @AutoIncremented } ;
+  modalidad          : string  { @NotNull @MaxLen(10) @Label("TERRESTRE|AEREO|ACUATICO") } ;
+  identificacion     : string  { @NotNull @MaxLen(20) @Label("Placa o matricula") } ;
+  descripcion        : string  { @MaxLen(120) } ;
+  capacidadPesoKg    : decimal { @NotNull @Size(12,3) @Min(0) } ;
+  capacidadVolumenM3 : decimal { @Size(12,4) @Min(0) } ;
+  tieneRefrigeracion : boolean { @NotNull @DefaultValue(false) } ;
+  activo             : boolean { @NotNull @DefaultValue(true) } ;
+
+  transportadorId : int { @NotNull @FK(FK_TRA_TDR, Transportador) } ;
+
+  transportador : Transportador { @LinkByFK(FK_TRA_TDR) } ;
+  terrestre     : Terrestre { @MappedBy(transporte) @OneToOne @Optional } ;
+  aereo         : Aereo     { @MappedBy(transporte) @OneToOne @Optional } ;
+  acuatico      : Acuatico  { @MappedBy(transporte) @OneToOne @Optional } ;
+  envios        : Envio[]   { @MappedBy(transporte) } ;
+}

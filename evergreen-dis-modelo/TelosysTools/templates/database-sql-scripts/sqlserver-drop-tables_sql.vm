@@ -1,0 +1,15 @@
+#set( $env.database = 'SQLSERVER' )
+#parse("include/sql_header.vm")
+
+-- DROP ALL FK CONSTRAINTS
+#foreach( $entity in $model.allEntites  )
+$___#foreach( $fk in $entity.databaseForeignKeys )
+## NB : no quote required around FK-NAME 
+ALTER TABLE $entity.sqlTableName DROP CONSTRAINT $fk.name ;
+$___#end## foreach( $fk )
+#end## foreach( $entity )
+
+-- DROP ALL TABLES
+#foreach( $entity in $model.allEntites )
+DROP TABLE $entity.sqlTableName ;
+#end

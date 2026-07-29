@@ -1,0 +1,12 @@
+// Del caso (sin atributos). Especializacion con datos reales del modo terrestre
+@DbTable(DIS_TERRESTRE)
+Terrestre {
+  transporteId      : int    { @Id @FK(FK_TER_TRA, Transporte) } ;
+  tipoVehiculo      : string { @NotNull @MaxLen(30) } ;   // CAMION, TURBO, TRACTOMULA, CAMIONETA
+  numeroEjes        : short  { @Min(2) } ;
+  modeloAno         : short  { @Min(1950) } ;
+  conductor         : string { @MaxLen(80) } ;
+  licenciaConductor : string { @MaxLen(20) } ;
+
+  transporte : Transporte { @LinkByFK(FK_TER_TRA) } ;
+}

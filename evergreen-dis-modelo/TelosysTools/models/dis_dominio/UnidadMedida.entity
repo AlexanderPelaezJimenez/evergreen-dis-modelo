@@ -1,0 +1,9 @@
+// Catalogo de unidades de medida - resuelve H14
+@ReadOnly
+@DbTable(DIS_UNIDAD_MEDIDA)
+UnidadMedida {
+  codigo    : string  { @Id @MaxLen(6) @Label("Codigo") } ;   // KG, TON, CAJ, UND, BUL
+  nombre    : string  { @NotNull @MaxLen(40) } ;
+  factorAKg : decimal { @Size(12,4) @Min(0) @Label("Factor de conversion a kilogramos") } ;
+  activo    : boolean { @NotNull @DefaultValue(true) } ;
+}

@@ -1,0 +1,21 @@
+// Resuelve la relacion N:M Pedido-Producto del caso - mejora M04
+@DbTable(DIS_LINEA_PEDIDO)
+LineaPedido {
+  id                  : int     { @Id @AutoIncremented } ;
+  numeroLinea         : short   { @NotNull @Min(1) } ;
+  cantidad            : decimal { @NotNull @Size(12,3) @Min(0) } ;
+  precioUnitario      : decimal { @NotNull @Size(14,2) @Min(0) } ;
+  descuentoPorcentaje : decimal { @Size(5,2) @Min(0) @Max(100) @DefaultValue(0) } ;
+  subtotal            : decimal { @NotNull @Size(14,2) @Min(0) } ;
+  pesoLineaKg         : decimal { @Size(12,3) @Min(0) } ;
+
+  pedidoId     : int    { @NotNull @FK(FK_LIN_PED, Pedido) } ;
+  productoId   : int    { @NotNull @FK(FK_LIN_PRO, Producto) } ;
+  loteId       : int    {          @FK(FK_LIN_LOT, Lote) } ;
+  unidadCodigo : string { @NotNull @FK(FK_LIN_UNI, UnidadMedida) } ;
+
+  pedido   : Pedido       { @LinkByFK(FK_LIN_PED) } ;
+  producto : Producto     { @LinkByFK(FK_LIN_PRO) } ;
+  lote     : Lote         { @LinkByFK(FK_LIN_LOT) @Optional } ;
+  unidad   : UnidadMedida { @LinkByFK(FK_LIN_UNI) } ;
+}

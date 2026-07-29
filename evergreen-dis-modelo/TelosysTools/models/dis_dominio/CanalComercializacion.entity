@@ -1,0 +1,12 @@
+// Del caso: "CanalesComercializacion" -> singular
+@DbTable(DIS_CANAL_COMERCIALIZACION)
+CanalComercializacion {
+  codigo             : string  { @Id @MaxLen(10) } ;   // MAYORISTA, PLAZA, EXPORTA, DIRECTO
+  nombre             : string  { @NotNull @MaxLen(60) } ;
+  descripcion        : string  { @MaxLen(200) } ;
+  comisionPorcentaje : decimal { @Size(5,2) @Min(0) @Max(100) @DefaultValue(0) } ;
+  requiereFactura    : boolean { @NotNull @DefaultValue(true) } ;
+  activo             : boolean { @NotNull @DefaultValue(true) } ;
+
+  pedidos : Pedido[] { @MappedBy(canal) } ;
+}

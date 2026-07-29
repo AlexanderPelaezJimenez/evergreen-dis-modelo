@@ -1,0 +1,12 @@
+// Del caso (sin atributos). Especializacion con datos reales del modo aereo
+@DbTable(DIS_AEREO)
+Aereo {
+  transporteId     : int    { @Id @FK(FK_AER_TRA, Transporte) } ;
+  aerolinea        : string { @NotNull @MaxLen(60) } ;
+  numeroVuelo      : string { @MaxLen(15) } ;
+  aeropuertoOrigen : string { @MaxLen(5) @Label("Codigo IATA") } ;
+  aeropuertoDestino: string { @MaxLen(5) @Label("Codigo IATA") } ;
+  guiaAerea        : string { @MaxLen(30) @Label("Air Waybill") } ;
+
+  transporte : Transporte { @LinkByFK(FK_AER_TRA) } ;
+}

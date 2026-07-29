@@ -1,0 +1,9 @@
+// Ciclo de vida del pedido - resuelve H08
+@ReadOnly
+@DbTable(DIS_ESTADO_PEDIDO)
+EstadoPedido {
+  codigo  : string  { @Id @MaxLen(15) } ;   // REGISTRADO, EN_PREPARACION, LISTO, DESPACHADO, ENTREGADO, CANCELADO
+  nombre  : string  { @NotNull @MaxLen(40) } ;
+  orden   : short   { @NotNull @Min(1) @Label("Orden en el ciclo de vida") } ;
+  esFinal : boolean { @NotNull @DefaultValue(false) @Label("Estado terminal") } ;
+}

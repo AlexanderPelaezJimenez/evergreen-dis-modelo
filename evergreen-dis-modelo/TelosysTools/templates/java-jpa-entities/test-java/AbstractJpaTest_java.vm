@@ -1,0 +1,65 @@
+#parse("/include/java_header.vm")
+##------------------------------------------------------
+package ${target.javaPackageFromFolder($TEST_SRC)};
+
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
+
+public abstract class AbstractJpaTest {
+	
+    protected static final String SEPARATOR  = "=============================================" ;
+    protected static final String SEPARATOR2 = "---------------------------------------------" ;
+    
+    private static EntityManagerFactory emf;
+    protected EntityManager em;
+
+    @BeforeAll
+    static void beforeAll() {
+        emf = Persistence.createEntityManagerFactory("testPU");
+    }
+
+    @AfterAll
+    static void afterAll() {
+        if (emf != null) emf.close();
+    }
+
+    @BeforeEach // before each test
+    void beforeEach(TestInfo testInfo) {
+    	print(SEPARATOR);
+    	print(testInfo.getDisplayName() );
+    	print(SEPARATOR2);
+    	print("--- emf.createEntityManager()");
+        em = emf.createEntityManager();
+        
+        // Disable H2 foreign key constraints for this test
+    	print("--- ( Disable H2 foreign key constraints )");
+        em.getTransaction().begin();
+        em.createNativeQuery("SET REFERENTIAL_INTEGRITY FALSE").executeUpdate();
+        em.getTransaction().commit();
+    }
+
+    @AfterEach // after each test
+    void afterEach() {
+        // Re-enable H2 foreign key constraints before closing
+    	print("--- ( Re-enable H2 foreign key constraints )");
+        em.getTransaction().begin();
+        em.createNativeQuery("SET REFERENTIAL_INTEGRITY TRUE").executeUpdate();
+        em.getTransaction().commit();
+        
+    	print("--- em.close()");
+        if (em != null) em.close();
+    	print(SEPARATOR);
+    }
+    
+    protected void print(String msg) {
+    	System.out.println(msg);
+    }
+}

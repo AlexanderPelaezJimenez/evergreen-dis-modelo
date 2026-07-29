@@ -1,0 +1,43 @@
+#set( $env.database = 'SQLSERVER' )
+#parse("include/sql_header.vm")
+#parse("include/sql_macros.vm")
+## ---------------------------------------
+##  For each entity : CREATE TABLE 
+## ---------------------------------------
+#foreach( $entity in $model.allEntites )
+## CREATE TABLE IF NOT EXISTS $entity.sqlTableName
+## use $entity.databaseSchema if necessary
+CREATE TABLE $entity.sqlTableName
+(
+## COLUMNS DEFINITION :
+$__#foreach( $attribute in $entity.attributes )
+$____#setEOL($entity, $foreach)
+##$____#setCOLTYPE($attribute)
+##  $attribute.sqlColumnName $COLTYPE ${attribute.sqlColumnConstraints}$EOL
+  $attribute.sqlColumnName $attribute.sqlColumnType ${attribute.sqlColumnConstraints}$EOL
+$__#end
+## PRIMARY KEY DEFINITION :
+$__#if( $entity.hasPrimaryKey() )
+  PRIMARY KEY ($entity.sqlPrimaryKeyColumnsAsString)
+$__#end
+);
+
+#end## foreach( $entity )
+
+## ---------------------------------------------------------
+##  For each Foreign Key in each entity : CREATE FOREIGN KEY 
+## ---------------------------------------------------------
+#foreach( $entity in $model.allEntites  )
+#if ( $entity.hasForeignKeys() ) 
+#set($tableName = $entity.sqlTableName )
+#foreach( $fk in $entity.databaseForeignKeys )
+ALTER TABLE $tableName
+## NB : no quote around FK-NAME for MYSQL
+  ADD CONSTRAINT $fk.name FOREIGN KEY($fk.sqlOriginColumnsAsString) 
+  REFERENCES ${fk.sqlReferencedTableName}($fk.sqlReferencedColumnsAsString) ;
+## AN INDEX IS AUTOMATICALLY CREATED BY MYSQL FOR EACH FK
+## CREATE INDEX ON $tableName($fk.sqlOriginColumnsAsString) ;
+#end## foreach( $fk )
+
+#end## if has FK
+#end## foreach( $entity )

@@ -1,0 +1,240 @@
+## --------------------------------------------------
+#if ( $entity.isJoinEntity() )
+#cancel("No test class for join entity")
+#end
+## --------------------------------------------------
+#parse("include/init_var_entity.vm")
+#parse("/include/java_header.vm")
+##------------------------------------------------------
+package ${target.javaPackageFromFolder($TEST_SRC)};
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+class ${entity.name}Test extends AbstractJpaTest {
+## ----------
+#set( $values1 = $fn.buildValues($entity.attributes, 1) )
+#set( $values2 = $fn.buildValues($entity.attributes, 2) )
+#set( $values3 = $fn.buildValues($entity.attributes, 3) )
+## ----------
+#if( $entity.hasGeneratedKey() )
+#set( $KEY = "key" )
+#else
+#set( $KEY = "KEY" )
+#end
+## ----------
+#macro( setNonKeyAttributes $argEntityVar $argValues )
+$__#foreach($attribute in $entity.nonKeyAttributes)
+## FK can be set since FK constraints are disabled in H2 (see AbstractJpaTest)
+##$____#if ( ! $attribute.isFK() )
+$______#if ( $attribute.isGeneratedValue() )
+		// $attribute.name is generated => do not set
+$______#else
+$______#if ( $attribute.isFK() )#set( $FKcomment = "// FK (but constraints disabled for tests)" )#else#set( $FKcomment = "")#end
+		${argEntityVar}.${attribute.setter}( $argValues.getValue($attribute.name) ); $FKcomment
+$______#end 
+##$____#else
+##		// $attribute.name is a Foreign Key => do not set
+##$____#end 
+$__#end
+#end
+## ----------
+#macro( buildEntityBasicPK $argValues $argNum)
+$_______#if( ! $entity.hasGeneratedKey() )
+	private static final $entity.keyAttribute.type ${KEY}${argNum} = $argValues.getValue($entity.keyAttribute.name);
+$_______#else
+	private static $entity.keyAttribute.type ${KEY}${argNum}; // will be generated
+$_______#end
+    private ${entity.name} getEntity${argNum}() {
+    	${entity.name} entity = new ${entity.name}();
+$_______#if( ! $entity.hasGeneratedKey() )
+		entity.${entity.keyAttribute.setter}( ${KEY}${argNum} );
+$_______#else
+		// Primary Key will be generated => do not set value here
+$_______#end
+$_______#setNonKeyAttributes("entity", $argValues)
+    	return entity;
+    }
+#end
+## ----------
+#macro( buildEntityCompositePK $argValues $argNum)
+	private static final $jpaEntityIdClass ${KEY}${argNum} = new $jpaEntityIdClass($argValues.getValues($entity.keyAttributes,","));
+    private ${entity.name} getEntity${argNum}() {
+    	${entity.name} entity = new ${entity.name}();
+$_______#foreach($attribute in $entity.attributes)
+		entity.${attribute.setter}( $argValues.getValue($attribute.name) ); // composite PK
+$_______#end
+$_______#setNonKeyAttributes("entity", $argValues)
+    	return entity;
+    }
+#end
+## ----------
+
+#if ( $entity.hasCompositePrimaryKey() )  
+#buildEntityCompositePK( $values1, 1)
+#buildEntityCompositePK( $values2, 2)
+#else
+#buildEntityBasicPK( $values1, 1)
+#buildEntityBasicPK( $values2, 2)
+#end
+    
+    @Test
+    @Order(1)
+    void testCreateWithPersist() {
+    	${entity.name} entity = getEntity1();
+		assertFalse(em.contains(entity)); // entity is "not managed" (detached or new)
+        em.getTransaction().begin();
+    	print("---   em.persist(..)");
+        em.persist(entity);
+#if( $entity.hasGeneratedKey() )
+$____#if( ! $entity.hasCompositePrimaryKey() )
+		${KEY}1 = entity.${entity.keyAttribute.getter}(); // keep generated value
+$____#else
+		// Generated key + composite primary key => must be adjusted manually
+$____#end
+#end		
+    	print("---   em.getTransaction().commit()");
+        em.getTransaction().commit();
+        assertTrue(em.contains(entity)); // entity is "managed"
+    }
+    
+    @Test
+    @Order(2)
+    void testReadWithFind() {
+    	print("---   em.find(..)");
+    	${entity.name} entityFound = em.find(${entity.name}.class, ${KEY}1);
+        assertNotNull(entityFound, "Entity should be found by ID");
+		// check attribute values
+    	${entity.name} entity = getEntity1();
+$_______#foreach($attribute in $entity.nonKeyAttributes)
+        assertEquals(entity.${attribute.getter}(), entityFound.${attribute.getter}());
+$_______#end
+    }
+    
+    @Test
+    @Order(3)
+    void testUpdate() {
+        em.getTransaction().begin();
+		// Find => SQL SELECT
+    	print("---   em.find(..)");
+        ${entity.name} entity = em.find(${entity.name}.class, ${KEY}1);
+        assertNotNull(entity, "Entity should be found by ID");
+		// Update non key attributes
+$_______#setNonKeyAttributes("entity", $values3)
+		// Commit changes => SQL UPDATE)
+    	print("---   em.getTransaction().commit()");
+        em.getTransaction().commit();
+
+    	print("---   em.clear()");
+        em.clear(); // detaches all entities
+        assertFalse(em.contains(entity), "Entity should be detached");
+
+        // Find => SQL SELECT because JPA context is void and therefore the entity is detached
+		print("---   em.find(..)");
+        entity = em.find(${entity.name}.class, ${KEY}1);
+        assertNotNull(entity, "Entity should be found by ID");
+    }
+    
+    @Test
+    @Order(4)
+    void testUpsertWithMergeOnNonExistentEntity() {
+    	${entity.name} detached = getEntity2();
+#if( ! $entity.hasGeneratedKey() )
+        // ensure the entity does not exist in DB => find by id
+    	print("---   em.find(..)");
+        assertNull( em.find(${entity.name}.class, ${KEY}2) );
+#else
+		// Key is generated => cannot check existence in DB
+		// In this case JPA assumes the entity is new => it will perform an INSERT
+#end
+    	
+    	// MERGE operation => must create entity in DB (with SQL INSERT)
+    	em.getTransaction().begin();
+    	print("---   em.merge(..)");
+    	${entity.name} managed = em.merge(detached); // merge() returns a managed copy
+    	em.getTransaction().commit();
+    	
+    	assertNotSame(detached, managed); // different objects
+#if( $entity.hasGeneratedKey() )
+$____#if( ! $entity.hasCompositePrimaryKey() )
+		${KEY}2 = managed.${entity.keyAttribute.getter}(); // keep generated key
+$____#else
+		// Generated key + composite primary key => cannot keep generated key
+		// => must be adjusted manually
+$____#end
+#end
+        
+        // ensure the entity now exists in DB
+    	print("---   em.find(..)");
+        ${entity.name} found = em.find(${entity.name}.class, ${KEY}2 );
+        assertNotNull(found);
+    }
+    
+    @Test
+    @Order(5)
+    void testUpsertWithMergeOnExistingManagedEntity() {
+    	${entity.name} detached = getEntity2();
+        // ensure the entity exists in DB
+    	print("---   em.find(..)");
+    	${entity.name} managed = em.find(${entity.name}.class, ${KEY}2 ) ; 
+    	assertNotNull(managed); 
+    	// if found => managed, if managed => merge is technically allowed, but redundant (change + commit is enough) 
+    	
+    	// MERGE operation (must create entity in DB)
+    	em.getTransaction().begin();
+    	print("---   em.merge(..)");
+    	em.merge(managed); // merge() returns a managed copy
+    	em.getTransaction().commit();
+    	
+    	assertNotSame(detached, managed); // different objects
+        
+        // ensure the entity now exists in DB
+    	print("---   em.find(..)");
+        ${entity.name} found = em.find(${entity.name}.class, ${KEY}2 );
+        assertNotNull(found);
+    }
+    
+    @Test
+    @Order(6)
+    void testUpsertWithMergeOnExistingDetachedEntity() {
+    	${entity.name} detached = getEntity2(); // PK exists in DB 
+    	// MERGE operation => must update entity in DB (with SQL UPDATE) but only if different values
+		// detached.setXxxx(newValue); // change value to cause an update
+    	em.getTransaction().begin();
+    	print("---   em.merge(..)");
+		// merge() = sql select, check if different, if different sql update (else nothing)  
+    	${entity.name} managed = em.merge(detached); // merge() returns a managed copy
+    	em.getTransaction().commit();
+    	
+    	assertNotSame(detached, managed); // different objects
+        
+        // ensure the entity now exists in DB
+    	print("---   em.find(..)");
+        ${entity.name} found = em.find(${entity.name}.class, ${KEY}2 );
+        assertNotNull(found);
+    }
+    
+    @Test
+    @Order(7)
+    void testDelete() {
+        em.getTransaction().begin();
+    	print("---   em.find(..)");
+        ${entity.name} entity = em.find(${entity.name}.class, ${KEY}1);
+    	print("---   em.remove(entity)");
+        em.remove(entity);
+        em.getTransaction().commit();
+    	print("---   em.find(..)");
+        ${entity.name} deleted = em.find(${entity.name}.class, ${KEY}1);
+        assertNull(deleted, "Entity should be deleted");
+    }
+}

@@ -1,0 +1,111 @@
+#parse("include/java_header.vm")
+package ${target.javaPackageFromFolder($SRC)};
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.hibernate.engine.jdbc.internal.FormatStyle;
+
+import jakarta.persistence.Persistence;
+
+/**
+ * SQL files generator for database schema creation and deletion 
+ * NB: JPA tries to bootstrap a JDBC connection => the database must be started
+ */
+public class DbSchemaJpaGenerator {
+	
+	private static final String PERSISTENCE_UNIT_NAME = "pu-postgre";
+	private static final String DATABASE_PRODUCT_NAME = "PostgreSQL";
+	
+    public static void main(String[] args) throws IOException {
+        String createSqlFile = "schema-create.sql";
+        String dropSqlFile   = "schema-drop.sql";
+
+        // Step 0 - Delete existing files (many JPA providers will not overwrite files that already exist)
+        Files.deleteIfExists(Paths.get(createSqlFile));
+        Files.deleteIfExists(Paths.get(dropSqlFile));
+
+        // Step 1 - SQL files generation
+        generateDbSchema(PERSISTENCE_UNIT_NAME, createSqlFile, dropSqlFile);
+        
+        // Step 2 - SQL files formatting
+        formatSqlFile(createSqlFile);
+        formatSqlFile(dropSqlFile);
+        
+        println("Processing completed successfully.");
+    }
+    
+    /**
+     * Generates 2 SQL files for database schema creation and deletion (using JPA schema generator)
+     * @param persistenceUnitName
+     * @param createSqlFile
+     * @param dropSqlFile
+     */
+    private static void generateDbSchema(String persistenceUnitName, String createSqlFile, String dropSqlFile) {
+        
+        Map<String, Object> properties = new HashMap<>();
+        // which DDL scripts
+        properties.put("jakarta.persistence.schema-generation.scripts.action",        "drop-and-create");
+        // where to write the DDL scripts
+        properties.put("jakarta.persistence.schema-generation.scripts.create-target", createSqlFile );
+        properties.put("jakarta.persistence.schema-generation.scripts.drop-target",   dropSqlFile);
+
+        // "database-product-name" => to specify database dialect (important for correct SQL)
+        properties.put("jakarta.persistence.database-product-name", DATABASE_PRODUCT_NAME);
+
+        // "database.action = none" => guarantees the database is not modified (Hibernate will never execute DDL on the database)
+        properties.put("jakarta.persistence.schema-generation.database.action", "none"); 
+
+        // Name must match your persistence unit name in persistence.xml
+        Persistence.generateSchema(persistenceUnitName, properties);
+
+        println("SQL files generated successfully:");
+        println(" . " + Paths.get(createSqlFile).toAbsolutePath() );
+        println(" . " + Paths.get(dropSqlFile).toAbsolutePath() );
+    }
+    
+    /**
+     * Format the given SQL file using Hibernate formatter 
+     * (JPA specification itself has no property for SQL formatting) 
+     * @param filePath
+     * @throws IOException
+     */
+    private static void formatSqlFile(String filePath) throws IOException {
+        Path originalPath = Paths.get(filePath);
+        println("Formatting SQL file..." );
+        println(" . input file  = " + originalPath.toAbsolutePath());
+        if (!Files.exists(originalPath)) return;
+        
+        Path newPath = getFormattedFileName(originalPath) ;
+
+        String raw = Files.readString(originalPath);
+        String formatted = FormatStyle.DDL.getFormatter().format(raw);
+        Files.writeString(newPath, formatted);
+
+        println(" . output file = " + newPath.toAbsolutePath());
+    }
+
+    private static Path getFormattedFileName(Path originalFilePath) {
+        String fileName = originalFilePath.getFileName().toString();
+        int dotIndex = fileName.lastIndexOf('.');
+        String newFileName;
+        if (dotIndex > 0) {
+            // e.g., "foo.sql" -> "foo-formatted.sql"
+            newFileName = fileName.substring(0, dotIndex) + "-formatted" + fileName.substring(dotIndex);
+        } else {
+            // e.g., "foo" -> "foo-formatted"
+            newFileName = fileName + "-formatted";
+        }
+        // Return the new file name in the same directory
+        return originalFilePath.resolveSibling(newFileName);
+    }
+
+    private static void println(String msg) {
+    	System.out.println(msg);
+    }
+}
+

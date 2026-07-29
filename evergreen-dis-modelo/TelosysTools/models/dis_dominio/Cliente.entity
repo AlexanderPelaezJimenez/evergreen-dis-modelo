@@ -1,0 +1,18 @@
+// Del caso (sin atributos). Enriquecida con identificacion y contacto
+@AggregateRoot
+@DbTable(DIS_CLIENTE)
+Cliente {
+  id              : int     { @Id @AutoIncremented } ;
+  tipoDocumento   : string  { @NotNull @MaxLen(5) } ;    // NIT, CC, CE
+  numeroDocumento : string  { @NotNull @MaxLen(20) @Unique } ;
+  razonSocial     : string  { @NotNull @MaxLen(120) } ;
+  nombreComercial : string  { @MaxLen(120) } ;
+  correo          : string  { @MaxLen(120) } ;           // formato validado en la aplicacion
+  telefono        : string  { @MaxLen(20) } ;
+  fechaRegistro   : date    { @NotNull @Past } ;
+  activo          : boolean { @NotNull @DefaultValue(true) } ;
+
+  // Links
+  direcciones : Direccion[] { @MappedBy(cliente) @Cascade(ALL) } ;
+  pedidos     : Pedido[]    { @MappedBy(cliente) } ;
+}

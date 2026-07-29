@@ -1,0 +1,21 @@
+// Ejecucion de una tarea de preparacion sobre un pedido - resuelve H06 y H07
+@DbTable(DIS_TAREA)
+Tarea {
+  id               : int      { @Id @AutoIncremented } ;
+  secuencia        : short    { @NotNull @Min(1) } ;
+  estado           : string   { @NotNull @MaxLen(15) @DefaultValue("PENDIENTE") } ;
+  fechaPlanificada : datetime ;
+  fechaInicio      : datetime ;
+  fechaFin         : datetime ;
+  duracionMinutos  : int      { @Min(0) @Label("Tiempo de ejecucion") } ;   // el "tiempo" del caso
+  responsable      : string   { @MaxLen(80) } ;
+  observaciones    : string   { @LongText } ;
+
+  pedidoId        : int    { @NotNull @FK(FK_TAR_PED, Pedido) } ;
+  tipoTareaCodigo : string { @NotNull @FK(FK_TAR_TIP, TipoTarea) } ;
+
+  pedido     : Pedido     { @LinkByFK(FK_TAR_PED) } ;
+  tipoTarea  : TipoTarea  { @LinkByFK(FK_TAR_TIP) } ;
+  empaque    : Empaque    { @MappedBy(tarea) @OneToOne @Optional } ;
+  separacion : Separacion { @MappedBy(tarea) @OneToOne @Optional } ;
+}

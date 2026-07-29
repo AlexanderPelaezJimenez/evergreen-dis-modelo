@@ -1,0 +1,18 @@
+// Un viaje agrupa varios pedidos en un transporte - resuelve H13
+@AggregateRoot
+@DbTable(DIS_ENVIO)
+Envio {
+  id               : int      { @Id @AutoIncremented } ;
+  consecutivo      : string   { @NotNull @MaxLen(20) } ;
+  fechaProgramada  : datetime { @NotNull } ;
+  fechaSalidaReal  : datetime ;
+  fechaLlegadaReal : datetime ;
+  estado           : string   { @NotNull @MaxLen(15) @DefaultValue("PROGRAMADO") } ;
+  pesoCargadoKg    : decimal  { @Size(12,3) @Min(0) } ;
+  observaciones    : string   { @LongText } ;
+
+  transporteId : int { @NotNull @FK(FK_ENV_TRA, Transporte) } ;
+
+  transporte : Transporte { @LinkByFK(FK_ENV_TRA) } ;
+  pedidos    : Pedido[]   { @MappedBy(envio) } ;
+}

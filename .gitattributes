@@ -1,0 +1,11 @@
+# Normaliza todos los archivos de texto a LF en el repositorio,
+# sin importar el sistema operativo o la configuracion local de autocrlf
+# de cada quien. Evita diffs falsos entre Windows, macOS y Linux.
+* text=auto eol=lf
+
+# Binarios explicitos (por si se agregan mas adelante)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.zip binary
+*.jar binary

@@ -1,0 +1,20 @@
+// Del caso: identificador + fechaElaboracion. Enriquecido para contexto agro
+@AggregateRoot
+@DbTable(DIS_PRODUCTO)
+Producto {
+  id                 : int     { @Id @AutoIncremented } ;
+  identificador      : string  { @NotNull @MaxLen(30) @Label("Codigo de negocio") } ;  // del caso
+  nombre             : string  { @NotNull @MaxLen(120) } ;
+  descripcion        : string  { @LongText } ;
+  fechaElaboracion   : date    { @NotNull } ;                                          // del caso
+  pesoUnitarioKg     : decimal { @Size(10,3) @Min(0) } ;
+  requiereCadenaFrio : boolean { @NotNull @DefaultValue(false) } ;
+  activo             : boolean { @NotNull @DefaultValue(true) } ;
+
+  categoriaId  : int    { @NotNull @FK(FK_PRO_CAT, CategoriaProducto) } ;
+  unidadCodigo : string { @NotNull @FK(FK_PRO_UNI, UnidadMedida) } ;
+
+  categoria : CategoriaProducto { @LinkByFK(FK_PRO_CAT) } ;
+  unidad    : UnidadMedida      { @LinkByFK(FK_PRO_UNI) } ;
+  lotes     : Lote[]            { @MappedBy(producto) } ;
+}
