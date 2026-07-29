@@ -1,9 +1,4 @@
 # --- Generado por Telosys ---
-# Decision de ACT-20 (docs/decisiones.md): NO se versiona el codigo generado,
-# se versiona lo que lo produce (el modelo en TelosysTools/models/ y los
-# templates instalados en TelosysTools/templates/). Cualquiera con Telosys
-# instalado reconstruye estos artefactos identicos con los comandos del
-# README, sin importar su sistema operativo.
 evergreen-dis-modelo/sql/
 evergreen-dis-modelo/model-doc/
 evergreen-dis-modelo/src/
@@ -11,12 +6,37 @@ evergreen-dis-modelo/pom.xml
 evergreen-dis-modelo/TelosysTools/downloads/
 evergreen-dis-modelo/TelosysTools/telosys.env
 
+# --- Generado por Telosys: proyecto de la API (bundle java-rest-springboot-jpa-basic) ---
+# Se versiona TelosysTools/ (configuracion + plantillas ADAPTADAS), no la salida.
+evergreen-dis-api/src/
+evergreen-dis-api/pom.xml
+evergreen-dis-api/TelosysTools/downloads/
+evergreen-dis-api/TelosysTools/telosys.env
+
+# --- Generado por Telosys: proyecto web (bundle front-angular) ---
+evergreen-dis-web/src/
+evergreen-dis-web/public/
+evergreen-dis-web/angular.json
+evergreen-dis-web/package.json
+evergreen-dis-web/package-lock.json
+evergreen-dis-web/tsconfig.json
+evergreen-dis-web/tsconfig.app.json
+evergreen-dis-web/tsconfig.spec.json
+evergreen-dis-web/README.md
+evergreen-dis-web/.editorconfig
+evergreen-dis-web/.gitignore
+evergreen-dis-web/.vscode/
+evergreen-dis-web/node_modules/
+evergreen-dis-web/dist/
+evergreen-dis-web/.angular/
+evergreen-dis-web/TelosysTools/downloads/
+evergreen-dis-web/TelosysTools/telosys.env
+
 # --- Java / Maven (si alguien compila el codigo generado localmente) ---
 target/
 *.class
 
 # --- App de demostracion en Python ---
-# Se omite del repositorio por el momento.
 evergreen-dis-modelo/app/
 __pycache__/
 *.pyc
@@ -34,7 +54,7 @@ Desktop.ini
 ehthumbs.db
 
 # --- Editores / IDEs / configuracion local de herramientas (no se comparte) ---
-.vscode/
+/.vscode/
 .idea/
 .claude/settings.local.json
 *.swp

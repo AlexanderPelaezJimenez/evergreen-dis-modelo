@@ -1,0 +1,21 @@
+#set($env.language = "TypeScript")
+#parse("_include/standard-macros.vm")
+// Parent routes
+#parse("_include/standard-ts-header.vm")
+import { Routes } from '@angular/router';
+import { LayoutComponent } from '@core/layout/layout.component';
+import { HomeComponent } from '@features/home/home.component';
+
+export const routes: Routes = [
+  {
+    path: '', component: LayoutComponent, children: [
+      { path: '', component: HomeComponent },
+#foreach ( $entity in $model.entities )
+## $__#set($entPath = $entity.name.toLowerCase() + '-management')
+##      { path: '${entLC}-management', loadChildren: () => import('@features/${entLC}/${entLC}.route').then(m => m.routes) },
+$__#setEntityVariables($entity)
+      { path: '${entPath}', loadChildren: () => import('@features/${entlc}/${entlc}.route').then(m => m.routes) },
+#end
+    ]
+  }
+];

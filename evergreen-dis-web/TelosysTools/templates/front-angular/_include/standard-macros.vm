@@ -1,0 +1,5 @@
+## Standard macros definition 
+#macro( setEntityVariables $entity )
+$__#set( $entPath = $entity.name.toLowerCase() + '-management' )
+$__#set( $entlc   = $fn.toLowerCase($entity.name) )
+#end

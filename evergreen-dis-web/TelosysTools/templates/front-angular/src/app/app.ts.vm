@@ -1,0 +1,14 @@
+#set($env.language = "TypeScript")
+// Root component for this standalone Angular application
+#parse("_include/standard-ts-header.vm")
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+
+@Component({
+  selector: 'app-root',    // HTML tag ('app-root') that Angular will use to insert this component into the DOM
+  imports: [RouterOutlet], // tells Angular that this component depends on the 'RouterOutlet' directive
+  template: '<router-outlet></router-outlet>', // the HTML template 
+  // <router-outlet></router-outlet> tag is a placeholder where Angular dynamically inserts the component that matches the current route
+})
+export class AppComponent {
+}

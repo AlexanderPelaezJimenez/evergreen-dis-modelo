@@ -1,0 +1,45 @@
+#using( "ROOT_PKG" ) 
+#using( "DB_JDBC_DRIVER_CLASS", "DB_JDBC_URL", "DB_USER", "DB_PASSWORD", "DB_JPA_DIALECT" ) 
+## Force variable definition (to avoid default value)
+#using( "REST_SERVER_PORT", "REST_API_ROOT" ) 
+#--- server config
+server:
+  port: $fn.get('REST_SERVER_PORT','8080')
+
+#--- spring config
+spring:
+#   application:
+#     name: My basic application
+#   profiles:
+#     active: default
+#   main:
+#     banner-mode: off
+  datasource:
+    # Configure your datasource here :
+    driver-class-name: ${DB_JDBC_DRIVER_CLASS}
+    url: ${DB_JDBC_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+#  hikari:
+#    schema: XXXX # with Derby schema name = user name
+  jpa:
+    # Configure JPA-Hibernate here :
+    database-platform: ${DB_JPA_DIALECT}
+    hibernate:
+      ddl-auto: none  # none, update, create, create-drop, validate
+    show-sql: true
+    open-in-view: false # "Open Session In View" : true by default with Spring
+#   properties:
+#     hibernate.default_schema: XXXX
+#
+#--- logging config
+logging:
+  level:
+    ${ROOT_PKG}: DEBUG
+#      ${ROOT_PKG}.persistence: DEBUG
+#      ${ROOT_PKG}.rest.controllers: DEBUG
+#      ${ROOT_PKG}.rest.services: DEBUG
+
+#--- application config
+rest:
+  api-root: $fn.get('REST_API_ROOT','/api/v1')

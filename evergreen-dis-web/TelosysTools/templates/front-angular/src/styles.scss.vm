@@ -1,0 +1,33 @@
+/* You can add global styles to this file, and also import other style files */
+// Import Bootstrap using modern syntax
+@use 'bootstrap/scss/bootstrap';
+
+/* EverGreen: tipografia del sistema y tablas mas sobrias */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    color: #212529;
+}
+
+h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.table {
+    font-size: 0.9rem;
+}
+
+.table > thead th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+    font-weight: 600;
+    border-bottom-width: 1px;
+}
+
+.card {
+    border-color: #e9ecef;
+}

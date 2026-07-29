@@ -1,0 +1,129 @@
+#parse("_include/standard-variables.vm")
+## EverGreen: sin emojis, formulario en tarjeta, desplegables para FK, textos en español
+<div class="card shadow-sm">
+  <div class="card-header bg-white py-3">
+    <h2 class="mb-0">{{ ${entlc} ? 'Editar ${entity.name}' : 'Nuevo ${entity.name}' }}</h2>
+  </div>
+  <div class="card-body p-4">
+
+  <!-- ${entity.name} Form -->
+  <form [formGroup]="${entForm}" (ngSubmit)="onSubmit()" novalidate>
+#foreach($attribute in $entity.attributes)
+## --- Field label (default or specific from model)
+$__#set( $label = $fn.capitalize($attribute.name) )
+$__#if( $attribute.hasLabel() )#set( $label = $attribute.label )#end
+## --- Field required or not 
+$__#set( $requiredSymbol = '' )
+$__#if( $attribute.isNotNull() || $attribute.isNotEmpty() )#set( $requiredSymbol = ' <span class="text-danger">*</span>')#end
+$__#if( $attribute.isGeneratedValue() )#set( $requiredSymbol = ' <span class="badge text-bg-light fw-normal">auto</span>')#end
+## --- Visual marker for primary key
+$__#set( $pkSymbol = '' )
+$__#if( $attribute.isKeyElement() )#set( $pkSymbol = '<span class="badge text-bg-light fw-normal me-1">clave</span>')#end
+## --- Type description 
+$__#set( $typeDesc = '' )
+$__#if ( $attribute.isNumberType() )
+$____#if ( $attribute.isByteType() || $attribute.isShortType() || $attribute.isIntegerType() || $attribute.isLongType() ) 
+$______#set( $typeDesc = '(integer' )
+$____#end
+$____#if ( $attribute.isFloatType() || $attribute.isDoubleType() || $attribute.isDecimalType() ) 
+$______#set( $typeDesc = '(number' )
+$____#end
+$____#if ( $attribute.minValue != '' ) #set($typeDesc = ${typeDesc}+' min:'+ $attribute.minValue ) #end
+$____#if ( $attribute.maxValue != '' ) #set($typeDesc = ${typeDesc}+' max:'+ $attribute.maxValue ) #end
+$____#set( $typeDesc = ${typeDesc}+')' )
+$__#end
+$__#if ( $attribute.isStringType() )
+$____#if ( $attribute.minLength != '' && $attribute.maxLength != '') #set( $typeDesc = '(' + $attribute.minLength + ' to ' + $attribute.maxLength + ' char)') #end
+$____#if ( $attribute.minLength != '' && $attribute.maxLength == '') #set( $typeDesc = '(at least ' + $attribute.minLength + ' char)') #end
+$____#if ( $attribute.minLength == '' && $attribute.maxLength != '') #set( $typeDesc = '(up to '    + $attribute.maxLength + ' char)') #end
+$__#end
+$__#if( $attribute.isGeneratedValue() )
+$____#set( $placeHolder = 'Auto-generated value')
+$__#else
+$____#set( $placeHolder = "Enter ${entlc} ${attribute.name} ${typeDesc}")
+$__#end
+    <div class="row">
+      <!-- $entity.name $attribute.name ($attribute.neutralType) -->
+      <div class="col-md-6 mb-3">
+#if ( $attribute.isBooleanType() )
+## Checkbox : Bootstrap explicitly states that checkboxes 
+##            use "form-check" + "form-check-input" + "form-check-label" classes
+        <div class="form-check"> 
+          <input
+            type="checkbox"
+            id="${attribute.name}"
+            class="form-check-input"
+            formControlName="${attribute.name}" >
+          <label for="${attribute.name}" class="form-check-label">${pkSymbol}${label}</label>
+        </div>
+#elseif ( $attribute.isFKSimple() )
+$__#set( $refEntity = $attribute.referencedEntity )
+$__#set( $reflc     = $fn.toLowerCase($refEntity.name) )
+$__#set( $refPk     = $refEntity.keyAttribute.name )
+## Que mostrar en cada opcion: 1) atributo con tag Display, 2) nombre convencional, 3) primer texto, 4) la PK
+$__#set( $refLabelAttr = '' )
+$__#foreach( $a in $refEntity.attributes )
+$____#if( $refLabelAttr == '' && $a.hasTag('Display') )#set( $refLabelAttr = $a.name )#end
+$__#end
+$__#set( $preferidos = ["nombre","razonSocial","nombreComercial","alias","consecutivo","identificador","codigo","descripcion"] )
+$__#foreach( $p in $preferidos )
+$____#if( $refLabelAttr == '' && $refEntity.hasAttribute($p) )#set( $refLabelAttr = $p )#end
+$__#end
+$__#foreach( $a in $refEntity.nonKeyAttributes )
+$____#if( $refLabelAttr == '' && $a.isStringType() )#set( $refLabelAttr = $a.name )#end
+$__#end
+$__#if( $refLabelAttr == '' )#set( $refLabelAttr = $refPk )#end
+$__#if( ! $attribute.hasLabel() )#set( $label = $refEntity.name )#end
+        <label for="${attribute.name}" class="form-label">${pkSymbol}${label}${requiredSymbol}</label>
+        <select
+          id="${attribute.name}"
+          class="form-select"
+          formControlName="${attribute.name}">
+          <option [ngValue]="''">-- Seleccione ${refEntity.name} --</option>
+          @for(opt of (${reflc}Options${DOLLAR} | async) ?? []; track opt.${refPk}) {
+            <option [ngValue]="opt.${refPk}">{{ opt.${refLabelAttr} }}</option>
+          }
+        </select>
+#else
+## Not a check box => other input types 
+        <label for="${attribute.name}" class="form-label">${pkSymbol}${label}${requiredSymbol}</label>
+        <input
+          ${html.type($attribute)}
+          id="${attribute.name}"
+          class="form-control"
+          formControlName="${attribute.name}"
+$__#if ( $attribute.minLength != '' )
+          minlength="${attribute.minLength}"
+$__#end
+$__#if ( $attribute.maxLength != '' )
+          maxlength="${attribute.maxLength}"
+$__#end
+          placeholder="${placeHolder}">
+#end
+      </div>
+    </div>
+#end
+
+    <!-- Form Actions -->
+    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="onCancel()"
+        [disabled]="isSubmitting()">
+        Cancelar
+      </button>
+
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="${entForm}.invalid || isSubmitting()">
+        @if(isSubmitting()) {
+          <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+        }
+        {{ isSubmitting() ? (${entlc} ? 'Guardando...' : 'Creando...') : (${entlc} ? 'Guardar cambios' : 'Crear ${entity.name}') }}
+      </button>
+    </div>
+  </form>
+  </div>
+</div>

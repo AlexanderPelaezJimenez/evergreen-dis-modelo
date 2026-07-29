@@ -1,0 +1,6 @@
+## EverGreen: era un recurso estatico con la URL fija; ahora sale del cfg.
+#using( "REST_URL_ROOT", "REST_API_ROOT" )
+// Environment configuration for DEVELOPMENT mode
+export const environment = {
+    apiRootUrl: '${REST_URL_ROOT}${REST_API_ROOT}/' // Local development server root URI with trailing slash
+};

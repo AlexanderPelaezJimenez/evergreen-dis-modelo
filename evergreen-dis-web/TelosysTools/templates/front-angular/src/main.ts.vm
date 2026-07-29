@@ -1,0 +1,11 @@
+// Entry point for the Angular application
+#parse("_include/standard-ts-header.vm")
+import { bootstrapApplication } from '@angular/platform-browser';
+import { appConfig } from './app/app.config';
+import { AppComponent } from './app/app';
+
+// bootstrapApplication: function introduced in Angular 15+ to bootstrap a standalone Angular application
+// . AppComponent: the root component of the application (first component to be rendered when the application starts)
+// . appConfig: object that provides the application configuration
+bootstrapApplication(AppComponent, appConfig)
+  .catch((err) => console.error(err));

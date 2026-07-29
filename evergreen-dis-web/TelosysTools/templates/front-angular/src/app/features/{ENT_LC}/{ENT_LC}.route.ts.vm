@@ -1,0 +1,82 @@
+#set($env.language = "TypeScript")
+#parse("_include/standard-variables.vm")
+// Route for entity ${entity.name} 
+#parse("_include/standard-ts-header.vm")
+import { ActivatedRouteSnapshot, ResolveFn, Routes } from "@angular/router";
+import { inject } from "@angular/core";
+import { ${entity.name}              } from "./${entlc}";
+import { ${entity.name}Service       } from "./${entlc}.service";
+import { ${entity.name}ListComponent } from "./list/${entlc}-list";
+import { ${entity.name}FormComponent } from "./form/${entlc}-form";
+## Define references to used with a resolver
+#set($refList = [] )
+#foreach( $ref in $entity.references )
+$__#if($ref.toOne )
+$____#set( $unused = $refList.add($ref.entityName) ) 
+$__#end
+#end
+## Import references to used with a resolver
+#foreach( $refClassName in $refList )
+$__#set( $refClassNameLC = $refClassName.toLowerCase() )
+import { ${refClassName}Service } from "@features/${refClassNameLC}/${refClassNameLC}.service";
+import { ${refClassName} } from "@features/${refClassNameLC}/${refClassNameLC}";
+#end
+
+// Resolver for ${entity.name} single entity (it fetches a single object using the Primary Key)
+export const ${entlc}Resolver: ResolveFn<${entity.name}> = (route: ActivatedRouteSnapshot) => {
+  const service = inject(${entity.name}Service);
+  // Get Primary Key elements 
+#set($list = [])
+#foreach($attribute in $entity.keyAttributes)
+  const $attribute.name = route.paramMap.get('${attribute.name}'); 
+## Bug workaround: when type is "uuid" wrapperType is "string" instead of "String" => capitalize
+$__#set( $wrapperType = $fn.capitalize($attribute.wrapperType) )
+$__#set( $keyPart = $wrapperType + "(" + $attribute.name + ")" )
+$__#set( $unused = $list.add($keyPart) ) 
+#end
+  // Call service to get a single ${entity.name} by Primary Key 
+  return service.get${entity.name}ByPK($fn.join($list, ", ")); // PK
+};
+
+// Resolver for list of ${entity.name} (it fetches a list of N objects)
+export const ${entlc}ListResolver : ResolveFn<${entity.name}[]> = () => {
+  const service = inject(${entity.name}Service);
+  return service.get${entity.name}List();
+};
+
+## Resolvers for ManyToOne and OneToOne references 
+#foreach( $refClassName in $refList )
+## Create a resolver for each reference "ToOne"
+// ${refClassName}[] route resolver (it fetches a list of N objects)
+export const ${refClassName.toLowerCase()}ListResolver: ResolveFn<${refClassName}[]> = () => {
+  const service = inject(${refClassName}Service);
+  return service.get${refClassName}List();
+};
+#end
+
+#set($list = [] )
+#foreach( $refClassName in $refList )
+#set( $v = $refClassName.toLowerCase() + "List")
+#set( $r = "${v}: ${v}Resolver")
+$__#set( $unused = $list.add($r) ) 
+#end
+#set($refResolvers = $fn.join( $list, "," ) )
+export const routes: Routes = [
+  // Route to list component under the parent path
+  { path: '', component: ${entity.name}ListComponent },
+  // Routes to form component under the parent path
+#*
+#if ( $refResolvers != "" )
+  { path: 'new', component: ${entity.name}FormComponent, resolve: { $refResolvers } },
+  { path: 'edit/:id', component: ${entity.name}FormComponent, resolve: { ${entlc}: ${entlc}Resolver, $refResolvers } }
+#else
+  { path: 'new', component: ${entity.name}FormComponent },
+  { path: 'edit/:id', component: ${entity.name}FormComponent, resolve: { ${entlc}: ${entlc}Resolver } }
+#end
+*#
+#set($pkFields = $entity.keyAttributesNamesAsString("/:"))
+## Temporary, just for test without ref resolvers
+  { path: 'new', component: ${entity.name}FormComponent },
+  { path: 'edit/:$pkFields', component: ${entity.name}FormComponent, resolve: { ${entlc}: ${entlc}Resolver } }
+
+];

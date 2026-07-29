@@ -1,0 +1,44 @@
+#set($env.language = "TypeScript")
+#parse("_include/standard-variables.vm")
+#parse("_include/standard-macros.vm")
+#setEntityVariables($entity)
+// List component for entity ${entity.name} 
+#parse("_include/standard-ts-header.vm")
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink, Router } from '@angular/router';
+import { BehaviorSubject, finalize, switchMap, tap } from 'rxjs';
+import { ${serviceClass} } from '../${entlc}.service';
+
+@Component({
+  selector: 'app-${entlc}-list',
+  imports: [CommonModule, RouterLink],
+  templateUrl: './${entlc}-list.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class ${entity.name}ListComponent {
+  ${service} = inject(${serviceClass});
+  router = inject(Router);
+
+  loading = signal(true);
+  private refresh$ = new BehaviorSubject<void>(undefined);
+
+  ${entList} = this.refresh$.pipe(
+    tap(() => this.loading.set(true)),
+    switchMap(() => this.${service}.get${entity.name}List().pipe(
+      finalize(() => this.loading.set(false))
+    )),
+  );
+
+  edit${entity.name}(${pkArgsWithType}): void {
+    this.router.navigate(['/${entPath}/edit', ${pkArgs}]);
+  }
+
+  delete${entity.name}(${pkArgsWithType}): void {
+    if (confirm('Are you sure you want to delete this ${entlc}?')) {
+      this.${service}.delete${entity.name}(${pkArgs}).subscribe(() => {
+        this.refresh$.next();
+      });
+    }
+  }
+}

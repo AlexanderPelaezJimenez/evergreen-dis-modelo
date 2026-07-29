@@ -1,0 +1,8 @@
+## Standard variables definition for a TypeScript file
+#set($entlc          = $fn.toLowerCase($entity.name) )
+#set($pkArgs         = $fn.argumentsList($entity.keyAttributes) )
+#set($pkArgsWithType = $fn.argumentsListWithType($entity.keyAttributes) )
+#set($serviceClass   = "${entity.name}Service" )
+#set($service        = "${entlc}Service" )
+#set($entList        = "${entlc}List" )
+#set($entForm        = "${entlc}Form" )

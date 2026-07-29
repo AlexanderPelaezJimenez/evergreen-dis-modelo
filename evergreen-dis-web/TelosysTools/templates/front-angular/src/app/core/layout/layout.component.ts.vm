@@ -1,0 +1,79 @@
+## EverGreen: menu agrupado (raiz/catalogo/detalle segun el modelo), con buscador y seccion activa.
+#set($env.language = "TypeScript")
+#parse("_include/standard-macros.vm")
+// Layout Component design pattern 
+// providing a consistent structure across multiple pages
+#parse("_include/standard-ts-header.vm")
+import { Component, ChangeDetectionStrategy, computed, signal } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+
+interface MenuLink {
+  label: string;
+  link: string;
+}
+
+interface MenuGroup {
+  title: string;
+  items: MenuLink[];
+}
+
+@Component({
+  selector: 'app-layout',
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  templateUrl: './layout.component.html',
+  styleUrl: './layout.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class LayoutComponent {
+
+  readonly filter = signal('');
+
+  private readonly groups: MenuGroup[] = [
+    {
+      title: 'Procesos',
+      items: [
+#foreach( $entity in $model.entities )
+$__#if( $entity.isAggregateRoot() )
+$____#setEntityVariables($entity)
+        { label: '$entity.name', link: '/${entPath}' },
+$__#end
+#end
+      ]
+    },
+    {
+      title: 'Detalle',
+      items: [
+#foreach( $entity in $model.entities )
+$__#if( ! $entity.isAggregateRoot() && $entity.hasForeignKeys() )
+$____#setEntityVariables($entity)
+        { label: '$entity.name', link: '/${entPath}' },
+$__#end
+#end
+      ]
+    },
+    {
+      title: 'Catalogos',
+      items: [
+#foreach( $entity in $model.entities )
+$__#if( ! $entity.isAggregateRoot() && ! $entity.hasForeignKeys() )
+$____#setEntityVariables($entity)
+        { label: '$entity.name', link: '/${entPath}' },
+$__#end
+#end
+      ]
+    }
+  ];
+
+  readonly visibleGroups = computed<MenuGroup[]>(() => {
+    const term = this.filter().trim().toLowerCase();
+    if (!term) {
+      return this.groups;
+    }
+    return this.groups
+      .map(group => ({
+        title: group.title,
+        items: group.items.filter(item => item.label.toLowerCase().includes(term))
+      }))
+      .filter(group => group.items.length > 0);
+  });
+}

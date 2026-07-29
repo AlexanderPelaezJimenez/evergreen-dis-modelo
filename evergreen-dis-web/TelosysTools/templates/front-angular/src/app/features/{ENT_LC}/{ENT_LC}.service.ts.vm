@@ -1,0 +1,58 @@
+#set($env.language = "TypeScript")
+#parse("_include/standard-variables.vm")
+// Service for entity ${entity.name} 
+#parse("_include/standard-ts-header.vm")
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from 'environments/environment.development';
+import { ${entity.name} } from "./${entlc}";
+#set( $pkPathFromParam  = $entity.keyAttributesNamesAsString("/", '${', '}') )
+#set( $pkPathFromEntity = $entity.keyAttributesNamesAsString("/", "${DOLLAR}{${entlc}.", '}') )
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ${entity.name}Service {
+  private readonly apiUrl = environment.apiRootUrl + '${entlc}';
+
+  http = inject(HttpClient);
+
+  /**
+   * Get all 
+   */
+  get${entity.name}List(): Observable<${entity.name}[]> {
+    return this.http.get<${entity.name}[]>(this.apiUrl);
+  }
+
+  /**
+   * Get a ${entity.name} by its primary key
+   */
+  get${entity.name}ByPK(${pkArgsWithType}): Observable<${entity.name}> {
+    const url = `${DOLLAR}{this.apiUrl}/${pkPathFromParam}`;
+    return this.http.get<${entity.name}>(url);
+  }
+
+  /**
+   * Create a new ${entity.name}
+   */
+  create${entity.name}(${entlc}: ${entity.name}): Observable<${entity.name}> {
+    return this.http.post<${entity.name}>(this.apiUrl, ${entlc});
+  }
+
+  /**
+   * Update an existing ${entity.name}
+   */
+  update${entity.name}(${entlc}: ${entity.name}): Observable<${entity.name}> {
+    const url = `${DOLLAR}{this.apiUrl}/${pkPathFromEntity}`;
+    return this.http.put<${entity.name}>(url, ${entlc});
+  }
+
+  /**
+   * Delete a ${entity.name}
+   */
+  delete${entity.name}(${pkArgsWithType}): Observable<void> {
+    const url = `${DOLLAR}{this.apiUrl}/${pkPathFromParam}`;
+    return this.http.delete<void>(url);
+  }
+}

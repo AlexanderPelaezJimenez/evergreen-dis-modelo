@@ -1,0 +1,21 @@
+## EverGreen: era un recurso estatico de dos lineas; ahora es un panel derivado del modelo.
+#parse("_include/standard-macros.vm")
+<div class="mb-4">
+  <h2 class="mb-1">$fn.get('GUI_APP_TITLE', 'Angular by Telosys')</h2>
+  <p class="text-secondary mb-0">
+    Modelo de dominio con ${model.entities.size()} entidades. Seleccione una seccion para consultar o registrar informacion.
+  </p>
+</div>
+<div class="row g-3">
+#foreach( $entity in $model.entities )
+$__#setEntityVariables($entity)
+  <div class="col-12 col-sm-6 col-lg-4 col-xxl-3">
+    <a class="card h-100 shadow-sm text-decoration-none home-card" routerLink="/${entPath}">
+      <div class="card-body py-3">
+        <div class="fw-semibold text-dark">${entity.name}</div>
+        <div class="text-secondary small">${entity.attributes.size()} atributos</div>
+      </div>
+    </a>
+  </div>
+#end
+</div>

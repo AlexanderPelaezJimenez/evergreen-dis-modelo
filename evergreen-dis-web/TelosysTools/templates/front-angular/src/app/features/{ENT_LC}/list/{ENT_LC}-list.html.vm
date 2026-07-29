@@ -1,0 +1,72 @@
+## EverGreen: encabezados con @Label del modelo, tabla en tarjeta, textos en español.
+#parse("_include/standard-variables.vm")
+#parse("_include/standard-macros.vm")
+#setEntityVariables($entity)
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2 class="mb-0">${entity.name}</h2>
+    <span class="text-secondary small">Gestion de registros</span>
+  </div>
+  <button type="button" class="btn btn-primary" routerLink="/${entPath}/new">Nuevo ${entity.name}</button>
+</div>
+@if(loading()) {
+  <div class="d-flex justify-content-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="sr-only"></span>
+    </div>
+  </div>
+}
+<div class="card shadow-sm" [class.d-none]="loading()">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+#foreach($attribute in $entity.keyAttributes)
+$__#set( $th = $fn.capitalize($attribute.name) )
+$__#if( $attribute.hasLabel() )#set( $th = $attribute.label )#end
+          <th>${th}</th>
+#end
+#foreach($attribute in $entity.nonKeyAttributes)
+$__#set( $th = $fn.capitalize($attribute.name) )
+$__#if( $attribute.hasLabel() )#set( $th = $attribute.label )#end
+          <th>${th}</th>
+#end
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+#set($pkAttr = $entity.keyAttributesNamesAsString(", ", "${entlc}.", "")  )
+      <tbody>
+## "track" in "@for" = how to uniquely identify each item in the loop
+#set($track = $entity.keyAttributesNamesAsString(" + '-' + ", "${entlc}.", ""))
+        @for(${entlc} of ${entList} | async; track ${track}) {
+          <tr>
+#foreach($attribute in $entity.keyAttributes)
+            <td class="text-secondary">{{ ${entlc}.${attribute.name} }}</td>
+#end
+#foreach($attribute in $entity.nonKeyAttributes)
+            <td>{{ ${entlc}.${attribute.name} }}</td>
+#end
+            <td class="text-end">
+              <div class="btn-group btn-group-sm" role="group">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  (click)="edit${entity.name}(${pkAttr})"
+                  title="Editar ${entity.name}">
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-danger"
+                  (click)="delete${entity.name}(${pkAttr})"
+                  title="Eliminar ${entity.name}">
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

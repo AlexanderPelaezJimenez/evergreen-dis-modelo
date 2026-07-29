@@ -1,148 +1,244 @@
-# EverGreen — Modelo de dominio del macroproceso de Distribución [DIS]
+# EverGreen · Macroproceso de Distribución [DIS]
 
-Modelo de dominio (22 entidades) del macroproceso de Distribución del caso EverGreen, implementado y validado en Telosys 4.3, con generación de DDL (PostgreSQL/MySQL/SQLite/SQL Server), diagrama de clases y clases JPA, más una base de datos PostgreSQL de prueba orquestada con Docker.
+Modelo de dominio de 22 entidades del macroproceso de Distribución del caso EverGreen, y
+una **aplicación completa generada a partir de él con Telosys 4.3**: base de datos
+PostgreSQL, API REST en Spring Boot y aplicación web en Angular.
 
-Ver el plan completo en [`docs/plan_final_v2.md`](docs/plan_final_v2.md) y el resto de la documentación de soporte en [`docs/`](docs/).
+Ningún archivo de la aplicación está escrito a mano. Lo que se versiona en este
+repositorio son las **fuentes del generador** (el modelo, las plantillas y la
+configuración); el código se reconstruye con los comandos de esta guía.
 
-> **Este repositorio se comparte entre varios sistemas operativos.** Todos los comandos de esta guía están probados; las diferencias por SO están marcadas explícitamente donde aplican.
+> **Este repositorio se comparte entre varios sistemas operativos.** No contiene rutas
+> absolutas: los comandos de Telosys se ejecutan **siempre desde la raíz del repositorio**,
+> porque las rutas relativas de la configuración se resuelven contra el directorio actual.
 
 ## Requisitos previos
 
-| Herramienta | Para qué | Notas por SO |
+| Herramienta | Versión | Para qué |
 |---|---|---|
-| **Java 17+** (JDK) | Correr el CLI de Telosys | Windows/macOS/Linux: cualquier distribución (Temurin, Homebrew, etc.) sirve. Verificar con `java -version`. |
-| **Telosys CLI 4.3.x** | Modelar, validar (`cm`) y generar (`gen`) | Descargar de [telosys.org](https://www.telosys.org/). En macOS/Linux se ejecuta con `./telosys`; en Windows con `telosys.bat`. |
-| **Docker Desktop** | Levantar PostgreSQL para probar el modelo con datos reales | En Windows, usar el backend **WSL2** (opción por defecto en instalaciones recientes). En macOS, la versión para Apple Silicon o Intel según corresponda. |
+| **JDK** | 17 | Ejecutar el CLI de Telosys y compilar la API |
+| **Telosys CLI** | 4.3.0-001 | Validar el modelo (`cm`) y generar (`gen`) |
+| **Maven** | 3.9.x | Compilar y ejecutar la API |
+| **Node.js** | 20.19+, 22.12+ o 24+ | Compilar y ejecutar la SPA (Angular 21) |
+| **Podman** o **Docker** | cualquiera reciente | Levantar PostgreSQL 16 |
 
-No hace falta instalar PostgreSQL, Maven ni nada más de forma nativa: todo lo demás corre dentro de Docker o se genera con Telosys.
+No hace falta instalar PostgreSQL de forma nativa. Telosys CLI se descarga de
+[telosys.org](https://www.telosys.org/) y se ejecuta con `./telosys` en macOS/Linux o
+`telosys.bat` en Windows.
+
+Verificación rápida: `java -version`, `mvn -version`, `node --version`,
+`podman --version` (o `docker --version`).
 
 ## Estructura del repositorio
 
 ```
 .
-├── docs/                          # Plan, hallazgos, decisiones, diccionario de datos, etc.
-└── evergreen-dis-modelo/
-    ├── TelosysTools/
-    │   ├── models/dis_dominio/    # ← FUENTE DE VERDAD: los 22 archivos .entity
-    │   └── templates/             # Bundles de Telosys instalados (versionados para no depender del depot)
-    ├── db/
-    │   ├── init/                  # Scripts que Postgres corre al arrancar (schema + semilla + escenario)
-    │   └── queries/                # Las 10 consultas de negocio de prueba
-    ├── docker-compose.yml         # Levanta PostgreSQL 16 con todo precargado
-    ├── sql/                       # GENERADO por Telosys — no está en git, se reconstruye (ver abajo)
-    ├── model-doc/                 # GENERADO por Telosys — no está en git, se reconstruye
-    ├── src/                       # GENERADO por Telosys (clases JPA) — no está en git, se reconstruye
-    └── pom.xml                    # GENERADO por Telosys — no está en git, se reconstruye
+├── docs/                              Análisis del caso, decisiones, trazabilidad, guion
+├── evergreen-dis-modelo/              PROYECTO 1 · el modelo y sus artefactos
+│   ├── TelosysTools/
+│   │   ├── models/dis_dominio/        ← FUENTE DE VERDAD: los 22 archivos .entity
+│   │   └── templates/                 database-sql-scripts, model-doc, java-jpa-entities
+│   ├── db/                            Semilla y consultas SQL (escritas a mano)
+│   └── docker-compose.yml             PostgreSQL 16 (compatible con Podman y Docker)
+├── evergreen-dis-api/                 PROYECTO 2 · API REST
+│   └── TelosysTools/                  Configuración + bundle java-rest-springboot-jpa-basic
+└── evergreen-dis-web/                 PROYECTO 3 · aplicación web
+    └── TelosysTools/                  Configuración + bundle front-angular
 ```
 
-**Por qué el código generado no está en el repo:** es una decisión explícita del proyecto (ver [`docs/decisiones.md`](docs/decisiones.md)). Se versiona el modelo (`TelosysTools/models/`) y los templates instalados (`TelosysTools/templates/`), no sus resultados — así el repo no arrastra artefactos que puedan quedar desincronizados del modelo, y cualquiera los reconstruye idénticos con los comandos de abajo, sin importar su sistema operativo.
+Los tres proyectos comparten **un solo modelo**: los proyectos 2 y 3 apuntan al del
+proyecto 1 mediante `SpecificModelsFolder`, así que el modelo no se duplica. La
+justificación de esta separación está en [`docs/decisiones.md`](docs/decisiones.md).
 
-## Cómo levantar el proyecto desde cero
+**Lo que no está en el repositorio:** el código generado (`sql/`, `model-doc/`, `src/`,
+`pom.xml`, `package.json`, `angular.json`, `target/`, `node_modules/`). Es una decisión
+explícita del proyecto: se versiona el modelo y las plantillas, no sus resultados. Ver
+[`docs/decisiones.md`](docs/decisiones.md).
 
-### Paso 1 — Clonar y entrar al proyecto del modelo
+## Reproducir la aplicación desde cero
+
+### Camino corto: `deploy.sh`
+
+El script `deploy.sh` en la raíz automatiza todo el pipeline:
 
 ```bash
-git clone <url-del-repo>
-cd final_ind_software/evergreen-dis-modelo
+./deploy.sh check        # verifica las herramientas
+./deploy.sh all          # limpia, genera los 3 proyectos y levanta la base
+./deploy.sh api          # API en :8000   (en su propia terminal)
+./deploy.sh web          # SPA en :4200   (en otra terminal)
+./deploy.sh verify       # comprueba que base, API, Swagger y SPA responden
 ```
 
-### Paso 2 — Instalar Telosys CLI
+Otros comandos: `generate`, `db`, `clean` (borra el código generado sin tocar el modelo ni
+las plantillas) y `reset-db` (recrea la base perdiendo los datos).
 
-Descomprimir el CLI de Telosys en cualquier carpeta (fuera del repo) y verificar que funciona:
+Si el CLI de Telosys no está en `~/tools/telosys-cli/telosys`, indicar la ruta:
+`TELOSYS_CLI=/ruta/al/telosys ./deploy.sh all`.
 
-```bash
-# macOS / Linux
-./telosys ver
+El script detecta solo si usar Podman o Docker. `api` y `web` quedan en primer plano a
+propósito, para poder ver sus logs.
 
-# Windows
-telosys.bat ver
-```
+Las secciones siguientes explican los mismos pasos a mano, que es lo que conviene entender
+antes de confiar en el script.
 
-Debe responder con la versión (`4.3.0-...`). El resto de esta guía asume que se ejecuta el CLI **desde dentro de `evergreen-dis-modelo/`**, fijando esa carpeta como HOME de Telosys (`h .`).
+### Paso 1 · Generar los tres proyectos
 
-### Paso 3 — Regenerar los artefactos del modelo (DDL, diagrama, clases Java)
-
-Abrir el CLI interactivo de Telosys (`./telosys` en macOS/Linux, `telosys.bat` en Windows) parado dentro de `evergreen-dis-modelo/`, y escribir:
+Abrir el CLI de Telosys **parado en la raíz del repositorio** y ejecutar:
 
 ```
-h .
+h evergreen-dis-modelo
 m dis_dominio
 cm
 b database-sql-scripts
-gen * *
-y
+gen * * -y
 b model-doc
-gen * *
-y
+gen * * -y
 b java-jpa-entities
-gen * *
-y
+gen * * -y
+
+h evergreen-dis-api
+m dis_dominio
+cm
+b java-rest-springboot-jpa-basic
+gen * * -y
+
+h evergreen-dis-web
+m dis_dominio
+cm
+b front-angular
+gen * * -r -y
 ```
 
-- `cm` debe responder `Model OK ('dis_dominio' loaded : 22 entities)`.
-- Al terminar quedan generados `sql/`, `model-doc/` y `src/` + `pom.xml`.
-- Los bundles (`database-sql-scripts`, `model-doc`, `java-jpa-entities`) ya están instalados en `TelosysTools/templates/` (vienen en el repo), así que este paso funciona **sin conexión a internet**.
+`cm` debe responder `Model OK ('dis_dominio' loaded : 22 entities)` en los tres proyectos.
+Al terminar quedan generados **82 + 115 + 179 archivos, sin errores**.
 
-> Atajo para macOS/Linux (ejecuta lo mismo sin abrir el modo interactivo a mano):
+Dos detalles que no son opcionales:
+
+- **El `-r` del frontend es obligatorio.** Copia los recursos estáticos
+  (`package.json`, `angular.json`, los `tsconfig`, `public/`). Sin él se generan los
+  archivos de código pero el proyecto Angular no compila porque falta `package.json`.
+- **No ejecutar `ib`.** Los bundles ya están en el repositorio y **dos de ellos tienen
+  plantillas adaptadas**. Reinstalarlos desde el depot traería las versiones originales y
+  la aplicación dejaría de funcionar (ver la sección de adaptaciones más abajo).
+
+> Atajo para macOS/Linux, sin abrir el modo interactivo:
 > ```bash
-> RUTA_TELOSYS=/ruta/a/telosys-cli/telosys
-> printf 'h .\nm dis_dominio\ncm\nb database-sql-scripts\ngen * *\ny\nb model-doc\ngen * *\ny\nb java-jpa-entities\ngen * *\ny\nexit\n' | "$RUTA_TELOSYS"
+> CLI=/ruta/a/telosys-cli/telosys
+> printf 'h evergreen-dis-modelo\nm dis_dominio\ncm\nb database-sql-scripts\ngen * * -y\nb model-doc\ngen * * -y\nb java-jpa-entities\ngen * * -y\nh evergreen-dis-api\nm dis_dominio\nb java-rest-springboot-jpa-basic\ngen * * -y\nh evergreen-dis-web\nm dis_dominio\nb front-angular\ngen * * -r -y\nexit\n' | "$CLI"
 > ```
 
-### Paso 4 — Levantar la base de datos (requiere el Paso 3 primero)
+### Paso 2 · Levantar PostgreSQL
 
-`docker-compose.yml` monta `sql/postgresql-create-tables.sql`, así que **debe existir antes** de este paso.
-
-```bash
-docker compose up -d
-```
-
-Esto levanta PostgreSQL 16 y, la primera vez, ejecuta en orden:
-
-1. `sql/postgresql-create-tables.sql` (esquema, 22 tablas)
-2. `db/init/02-seed-catalogos.sql` (catálogos: unidades, estados, categorías, tipos de tarea, tipos de empaque, canales)
-3. `db/init/03-escenario-act13.sql` (el escenario de prueba de la finca La Esperanza)
-
-### Paso 5 — Probar con las 10 preguntas de negocio
+Requiere el Paso 1: el `docker-compose.yml` monta el DDL generado.
 
 ```bash
-docker compose exec -T db psql -U evergreen -d evergreen_dis < db/queries/10-preguntas-negocio.sql
+cd evergreen-dis-modelo
+podman compose up -d          # o: docker compose up -d
 ```
 
-### Para empezar de cero (borrar los datos y volver a cargar)
+La primera vez ejecuta en orden el esquema generado por Telosys (22 tablas, 26 FKs), los
+catálogos y el escenario de prueba de la finca La Esperanza.
+
+Con Podman, si la máquina virtual está apagada: `podman machine start`.
+
+### Paso 3 · API REST
 
 ```bash
-docker compose down -v   # -v borra tambien el volumen de datos
-docker compose up -d
+cd evergreen-dis-api
+mvn spring-boot:run
 ```
+
+Queda en `http://localhost:8000` con 44 endpoints (CRUD de las 22 entidades) y Swagger UI
+en `http://localhost:8000/swagger-ui/index.html`.
+
+### Paso 4 · Aplicación web
+
+```bash
+cd evergreen-dis-web
+npm install
+npm start
+```
+
+Queda en `http://localhost:4200`.
+
+Si el CLI de Angular pide consentimiento de telemetría y bloquea el arranque:
+`npx ng analytics disable --global`.
+
+**El orden importa.** Sin la base la API no arranca; sin la API la web carga pero no
+muestra ni guarda datos, y el síntoma es confuso.
+
+### Para empezar de cero con los datos
+
+```bash
+cd evergreen-dis-modelo
+podman compose down -v && podman compose up -d    # -v borra el volumen de datos
+```
+
+## Qué se genera a partir del modelo
+
+| Proyecto | Bundle | Salida |
+|---|---|---|
+| modelo | `database-sql-scripts` | DDL para PostgreSQL, MySQL, SQLite y SQL Server |
+| modelo | `model-doc` | Diagrama de clases (Mermaid y PlantUML) y documentación HTML |
+| modelo | `java-jpa-entities` | 22 entidades JPA con sus pruebas |
+| api | `java-rest-springboot-jpa-basic` | Entidades JPA, repositorios Spring Data, DTOs, servicios, 22 controladores REST, `application.yml`, `pom.xml` |
+| web | `front-angular` | Por entidad: listado, formulario, servicio HTTP, rutas y modelo TypeScript; más el layout, la portada y el proyecto Angular |
 
 ## Cómo evolucionar el modelo
 
-1. Editar el `.entity` correspondiente en `TelosysTools/models/dis_dominio/`.
-2. Validar: `cm` (debe seguir devolviendo `Model OK`).
-3. Regenerar (repetir el Paso 3 de arriba, o solo la entidad afectada con `gen <Entidad> *`).
-4. Si el cambio afecta el schema, recrear la base: `docker compose down -v && docker compose up -d`.
+1. Editar el `.entity` en `evergreen-dis-modelo/TelosysTools/models/dis_dominio/`.
+2. Validar con `cm` (debe seguir devolviendo `Model OK`).
+3. Repetir el Paso 1 en los proyectos afectados.
+4. Si cambió el esquema, recrear la base: `podman compose down -v && podman compose up -d`.
 
-Ver [`docs/act19-evolucion.md`](docs/act19-evolucion.md) para un ejemplo real cronometrado.
+Ver [`docs/act19-evolucion.md`](docs/act19-evolucion.md) para un ejemplo cronometrado.
+
+**Nunca editar el código generado.** Un cambio ahí se pierde en la siguiente generación.
+Según el caso, la corrección va en el modelo, en una plantilla o en `telosys-tools.cfg`.
+
+## Bundles adaptados
+
+Los bundles vienen del depot oficial `github_org:telosys-templates-v4-3` y **fueron
+modificados**: 12 plantillas y 2 recursos estáticos. Cada cambio lleva un comentario de una
+línea con el prefijo `EverGreen:` que identifica la divergencia.
+
+Sin esas adapt3aciones la aplicación no funciona: 16 de las 22 rutas GET devolvían HTTP 500,
+el navegador bloqueaba todas las llamadas por CORS, y era imposible crear registros porque
+el botón de guardar quedaba deshabilitado.
+
+El detalle completo, con el problema y la corrección de cada una, está en
+[`docs/decisiones.md`](docs/decisiones.md). Por eso `TelosysTools/templates/` está
+versionado y por eso no se debe ejecutar `ib`.
+
+## Limitaciones conocidas
+
+- **La API generada no tiene autenticación.** Expone CRUD completo, incluidos DELETE, sin
+  ninguna capa de seguridad. Sirve para una demostración local; no debe exponerse en red.
+- **Los errores de integridad llegan como HTTP 500** en lugar de 400 o 409, porque el
+  bundle no genera manejo de excepciones. La integridad sí se cumple: PostgreSQL rechaza
+  el dato y no queda basura.
 
 ## Convención de commits
 
 ```
-modelo(<entidad>): <cambio>
+modelo(<entidad>): <cambio>          para el modelo
+plantilla(<bundle>): <cambio>        para las adaptaciones de bundles
 ```
 
-Ejemplo: `modelo(Pedido): agregar atributo prioridad`
+Ejemplos: `modelo(Pedido): agregar atributo prioridad`,
+`plantilla(front-angular): desplegables para claves foraneas`
 
 ## Documentación
 
 | Documento | Contenido |
 |---|---|
-| [`docs/plan_final_v2.md`](docs/plan_final_v2.md) | Plan completo de implementación |
+| [`docs/plan_final_v2.md`](docs/plan_final_v2.md) | Plan de implementación del modelo |
 | [`docs/analisis-caso.md`](docs/analisis-caso.md) | Los 17 hallazgos del caso original, con evidencia |
 | [`docs/diccionario-datos.md`](docs/diccionario-datos.md) | Diccionario de datos de las 22 entidades |
 | [`docs/matriz-trazabilidad.md`](docs/matriz-trazabilidad.md) | Caso → modelo → tabla física |
-| [`docs/decisiones.md`](docs/decisiones.md) | Decisiones de diseño y su alternativa descartada |
+| [`docs/decisiones.md`](docs/decisiones.md) | Decisiones de diseño y adaptaciones de bundles |
 | [`docs/lista-chequeo-modelo.md`](docs/lista-chequeo-modelo.md) | Checklist semántico de 20 puntos |
 | [`docs/prueba-escritorio-act13.md`](docs/prueba-escritorio-act13.md) | Escenario de negocio y las 10 preguntas de prueba |
-| [`docs/bitacora-errores.md`](docs/bitacora-errores.md) | Errores y fricciones encontradas durante la implementación |
-| [`docs/guion-sustentacion.md`](docs/guion-sustentacion.md) | Guion de 12 minutos para la sustentación |
+| [`docs/bitacora-errores.md`](docs/bitacora-errores.md) | Errores y fricciones encontradas |
+| [`docs/guion-sustentacion.md`](docs/guion-sustentacion.md) | Guion de sustentación |
+| [`docs/act19-evolucion.md`](docs/act19-evolucion.md) | Ejercicio de evolución del modelo |

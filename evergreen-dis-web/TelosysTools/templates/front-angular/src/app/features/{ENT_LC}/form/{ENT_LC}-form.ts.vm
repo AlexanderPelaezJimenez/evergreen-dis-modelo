@@ -1,0 +1,137 @@
+## EverGreen: se inyectan los servicios de las entidades referenciadas por FK, para poblar los desplegables.
+#set($env.language = "TypeScript")
+#parse("_include/standard-variables.vm")
+#parse("_include/standard-macros.vm")
+#setEntityVariables($entity)
+// Form component for entity ${entity.name} 
+#parse("_include/standard-ts-header.vm")
+import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
+import { finalize } from 'rxjs';
+import { ${serviceClass} } from '../${entlc}.service';
+## --- entidades referenciadas por FK simple (sin repetir, excluyendo la propia)
+#set( $refMap = {} )
+#foreach( $attribute in $entity.attributes )
+$__#if( $attribute.isFKSimple() )
+$____#set( $refName = $attribute.referencedEntityName )
+$____#if( $refName != $entity.name && ! $refMap.containsKey($refName) )
+$______#set( $refMap[$refName] = $fn.toLowerCase($refName) )
+$____#end
+$__#end
+#end
+#foreach( $refName in $refMap.keySet() )
+import { ${refName}Service } from '../../${refMap[$refName]}/${refMap[$refName]}.service';
+#end
+
+@Component({
+  selector: 'app-${entlc}-form',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './${entlc}-form.html'
+})
+export class ${entity.name}FormComponent {
+  ${entForm}: FormGroup;
+  isSubmitting = signal<boolean>(false);
+
+  fb = inject(FormBuilder);
+  ${service} = inject(${serviceClass});
+  router = inject(Router);
+  route = inject(ActivatedRoute);
+  ${entlc} = this.route.snapshot.data['${entlc}'];
+## EverGreen: opciones de los desplegables de FK
+#foreach( $refName in $refMap.keySet() )
+  ${refMap[$refName]}Options${DOLLAR} = inject(${refName}Service).get${refName}List();
+#end
+
+  constructor() {
+    this.${entForm} = this.createForm();
+  }
+
+#macro(buildValidators)
+$__#set( $validatorsMap = {} )
+$__#foreach( $attribute in $entity.attributes)
+$____#set( $validators = [] )
+$____#if( $attribute.isStringType() )
+## String : 
+##   @MaxLen   - $attrib.maxLength    => Validators.maxLength(xx) 
+##   @MinLen   - $attrib.minLength    => Validators.minLength(xx)
+##   @Pattern  - $attrib.pattern      => Validators.pattern(/^[A-Z]+$/)
+##   @NotEmpty - $attrib.isNotEmpty() => Validators.required
+$______#if( $attribute.isNotNull() || $attribute.isNotEmpty() )#set( $z = $validators.add("Validators.required") )#end
+$______#if( $attribute.maxLength != "" )#set( $z = $validators.add("Validators.maxLength(${attribute.maxLength})") )#end
+$______#if( $attribute.minLength != "" )#set( $z = $validators.add("Validators.minLength(${attribute.minLength})") )#end
+$______#if( $attribute.pattern   != "" )#set( $z = $validators.add("Validators.pattern(${attribute.pattern})") )#end
+$______#if( $attribute.hasTag('Email'))#set( $z = $validators.add("Validators.email") )#end
+$____#end
+$____#if( $attribute.isNumberType() )
+## Number:  
+##   @Max - $attrib.maxValue => Validators.max(xx)
+##   @Min - $attrib.minValue => Validators.min(xx)
+$______#if( $attribute.isNotNull() || $attribute.isNotEmpty() )#set( $z = $validators.add("Validators.required") )#end
+$______#if( $attribute.maxValue != "" )#set( $z = $validators.add("Validators.max(${attribute.maxValue})") )#end
+$______#if( $attribute.minValue != "" )#set( $z = $validators.add("Validators.min(${attribute.minValue})") )#end
+$____#end
+## EverGreen: el bundle no exigia las fechas obligatorias (@NotNull sin validador)
+$____#if( $attribute.isTemporalType() )
+$______#if( $attribute.isNotNull() )#set( $z = $validators.add("Validators.required") )#end
+$____#end
+## EverGreen: una PK autogenerada la asigna la base, no puede ser required (bloqueaba el alta)
+$____#if( $attribute.isGeneratedValue() )#set( $validators = [] )#end
+$____#if( ! $validators.isEmpty() )#set($validatorsMap[$attribute.name] = $validators )#end
+$__#end
+#end
+  private createForm(): FormGroup {
+    // Angular FormGroup creation: defines all the fields of the form
+    // for each field: (1) initial value, (2) sync validators (optional), (3) async validators (optional)
+    return this.fb.group({
+#buildValidators()
+#foreach( $attribute in $entity.attributes)
+$__#if( $foreach.hasNext )#set($comma = ',')#else#set($comma = '')#end
+$__#set( $validatorsArray = '' )
+$__#if( $validatorsMap.containsKey($attribute.name) )
+$____#set( $validators = $validatorsMap[$attribute.name] )
+$____#set( $validatorsArray = ', [' + $fn.join($validators,', ') + ']')
+$__#end
+## EverGreen: la PK autogenerada se muestra deshabilitada y queda fuera del envio
+$__#if( $attribute.isGeneratedValue() )
+      ${attribute.name}: [ { value: this.${entlc}?.${attribute.name} ?? null, disabled: true } ]${comma}
+$__#elseif( $attribute.isBooleanType() )
+      ${attribute.name}: [ this.${entlc}?.${attribute.name} ?? false ]${comma}
+$__#elseif( $attribute.isTemporalType() )
+      ${attribute.name}: [ this.${entlc}?.${attribute.name} ?? null $validatorsArray ]${comma}
+$__#else
+      ${attribute.name}: [ this.${entlc}?.${attribute.name} || '' $validatorsArray ]${comma}
+$__#end
+#end    
+    });
+  }
+
+  onSubmit(): void {
+    this.isSubmitting.set(true);
+
+## #set( $pkPathFromEntity = $entity.keyAttributesNamesAsString("/", "${DOLLAR}{${entlc}.", '}') )
+#set($names = [])
+#foreach( $attribute in $entity.keyAttributes)
+$__#set( $z = $names.add($attribute.name) )
+#end
+#set( $template = '${x}: this.' + $entlc + '.${x}')
+#set( $pkArgs = $fn.joinWithTransformation( $names, ', ', $template, '${x}') )
+// pkArgs = $pkArgs
+    const formValue = this.${entForm}.value;
+    const endpoint = this.${entlc}
+      ? this.${service}.update${entity.name}({ ...formValue, $pkArgs})
+      : this.${service}.create${entity.name}(formValue);
+
+    endpoint.pipe(
+      finalize(() => this.isSubmitting.set(false))
+    ).subscribe(() => {
+      this.router.navigate(['/${entPath}']);
+    });
+  }
+
+  onCancel(): void {
+    this.router.navigate(['/${entPath}']);
+  }
+}

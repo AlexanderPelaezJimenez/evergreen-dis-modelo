@@ -1,0 +1,63 @@
+## EverGreen: sin emojis, cabecera clara, menu agrupado con buscador y seccion activa.
+<div class="d-flex flex-column vh-100 bg-body-tertiary">
+  <header class="navbar bg-white border-bottom flex-shrink-0 px-3">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-semibold text-dark mb-0" routerLink="/">
+        $fn.get('GUI_APP_TITLE', 'Angular by Telosys')
+      </a>
+      <span class="text-secondary small d-none d-md-inline">Macroproceso de Distribucion</span>
+    </div>
+  </header>
+  <div class="d-flex flex-grow-1 overflow-hidden">
+    <nav id="sidebarMenu" class="bg-white d-none d-md-flex flex-column flex-shrink-0 border-end">
+      <div class="p-3 border-bottom">
+        <input #q
+               type="search"
+               class="form-control form-control-sm"
+               placeholder="Buscar seccion"
+               (input)="filter.set(q.value)">
+      </div>
+      <div class="px-3 pb-3 flex-grow-1 overflow-auto">
+        <ul class="nav flex-column mt-3">
+          <li class="nav-item">
+            <a class="nav-link sidebar-link"
+               routerLink="/"
+               routerLinkActive="active"
+               [routerLinkActiveOptions]="{ exact: true }">
+              Inicio
+            </a>
+          </li>
+        </ul>
+        @for(group of visibleGroups(); track group.title) {
+          <div class="mt-3">
+            <span class="text-uppercase text-secondary fw-semibold sidebar-section">{{group.title}}</span>
+            <ul class="nav flex-column mt-1">
+              @for(item of group.items; track item.link) {
+                <li class="nav-item">
+                  <a class="nav-link sidebar-link"
+                     [routerLink]="item.link"
+                     routerLinkActive="active">
+                    {{item.label}}
+                  </a>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+        @if(visibleGroups().length === 0) {
+          <p class="text-secondary small mt-3 mb-0">Sin resultados</p>
+        }
+      </div>
+    </nav>
+    <main class="flex-grow-1 d-flex flex-column overflow-hidden">
+      <div class="flex-grow-1 overflow-auto px-4 py-4">
+        <router-outlet></router-outlet>
+      </div>
+      <footer class="bg-white text-center border-top mt-auto py-3 flex-shrink-0">
+        <div class="text-secondary small">
+          $fn.get('GUI_APP_TITLE', 'Angular by Telosys') &middot; $now.format('yyyy') &middot; Generado con Telosys
+        </div>
+      </footer>
+    </main>
+  </div>
+</div>

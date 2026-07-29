@@ -1,0 +1,6 @@
+## EverGreen: era un recurso estatico; la raiz de la API sale del cfg.
+#using( "REST_API_ROOT" )
+// Environment configuration for 'ng build' mode (CI/CD pipeline, Qualif, Prod, etc.)
+export const environment = {
+    apiRootUrl: '{ci-server-var}${REST_API_ROOT}/' // CI/CD variable substitution
+};

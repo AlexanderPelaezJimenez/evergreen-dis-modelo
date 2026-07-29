@@ -1,0 +1,27 @@
+#set($env.language = "TypeScript")
+// DTO for entity ${entity.name} 
+#parse("_include/standard-ts-header.vm")
+#set( $map = {} )
+#foreach( $link in $entity.links )
+$__#if( $link.isCardinalityToOne() && ! $map.containsKey(${link.fieldType}) )
+$__#set($lc = $link.fieldType.toLowerCase() )
+import { ${link.fieldType} } from '../${lc}/${lc}';
+$__#set( $map[${link.fieldType}] = "x" )## mark as already import
+$__#end
+#end
+
+export interface ${entity.name} {
+#foreach( $attribute in $entity.attributes )
+$__#set($comment = "")
+$__#if( $attribute.isKeyElement()  )
+$____#set($comment = "// PK")
+$__#end
+  ${attribute.name}: ${attribute.type}; $comment
+#end
+
+#foreach( $link in $entity.links )
+$__#if( $link.isCardinalityToOne() )
+  ${link.fieldName}: ${link.fieldType};
+$__#end
+#end
+}
